@@ -1,0 +1,10 @@
+token.json
+credentials.json
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+downloads/
+*.mp4
+*.m4a
+*.webm
+*.txt
