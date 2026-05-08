@@ -20,6 +20,7 @@ import BriefingsPage from './pages/BriefingsPage'
 import ResearchesPage from './pages/ResearchesPage'
 import HistoryPage from './pages/HistoryPage'
 import SettingsPage from './pages/SettingsPage'
+import ProjectsPage from './pages/ProjectsPage'
 
 export default function App() {
   const { setUser, setSession, clearAuth } = useAppStore()
@@ -78,6 +79,7 @@ export default function App() {
           <Route path="/researches" element={<ResearchesPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

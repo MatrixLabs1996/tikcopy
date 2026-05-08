@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Video, GraduationCap, Megaphone, MessageSquare,
   LayoutTemplate, FileText, BookOpen, Search, Clock,
-  Settings, LogOut, Sun, Moon,
+  Settings, LogOut, Sun, Moon, FolderOpen, ChevronRight,
 } from 'lucide-react'
 import useAppStore from '../stores/useAppStore'
 import { supabase } from '../services/supabase'
@@ -49,7 +49,7 @@ function SectionLabel({ label }) {
 }
 
 export default function Sidebar() {
-  const { user, theme, toggleTheme, clearAuth } = useAppStore()
+  const { user, theme, toggleTheme, clearAuth, activeProject } = useAppStore()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -97,10 +97,34 @@ export default function Sidebar() {
         </div>
       </NavLink>
 
+      {/* Active project widget */}
+      <NavLink to="/projects" style={{ textDecoration: 'none', marginBottom: '10px', display: 'block' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '8px 10px', borderRadius: '7px',
+          background: activeProject ? 'rgba(255,62,94,0.06)' : 'var(--bg-elevated)',
+          border: `1px solid ${activeProject ? 'rgba(255,62,94,0.2)' : 'var(--border-default)'}`,
+          cursor: 'pointer', transition: 'all 0.12s',
+        }}>
+          <FolderOpen size={13} color={activeProject ? 'var(--accent)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '1px' }}>Projeto ativo</div>
+            <div style={{
+              fontSize: '12px', fontWeight: 500,
+              color: activeProject ? 'var(--text-primary)' : 'var(--text-muted)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {activeProject ? activeProject.name : 'Nenhum selecionado'}
+            </div>
+          </div>
+          <ChevronRight size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+        </div>
+      </NavLink>
+
       {/* Nav */}
-      <SectionLabel label="Ferramentas" />
+      <SectionLabel label="Transcrever" />
       <NavItem to="/organic" icon={Video} label="Vídeos Orgânicos" />
-      <NavItem to="/lessons" icon={GraduationCap} label="Aulas & Longos" />
+      <NavItem to="/lessons" icon={GraduationCap} label="Podcasts & Aulas" />
       <NavItem to="/ads" icon={Megaphone} label="Anúncios" />
 
       <SectionLabel label="Copy" />
@@ -114,6 +138,9 @@ export default function Sidebar() {
 
       <SectionLabel label="Histórico" />
       <NavItem to="/history" icon={Clock} label="Recentes" />
+
+      <SectionLabel label="Projetos" />
+      <NavItem to="/projects" icon={FolderOpen} label="Meus Projetos" />
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
