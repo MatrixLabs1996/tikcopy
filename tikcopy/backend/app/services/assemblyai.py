@@ -7,9 +7,11 @@ logger = logging.getLogger(__name__)
 
 AAI_BASE = "https://api.assemblyai.com/v2"
 
-# Preço AssemblyAI (modelo Universal async) ~= US$0.27/hora = US$0.0045/min.
-# Ajuste aqui se mudar de plano/modelo.
-AAI_USD_PER_MIN = 0.0045
+# Preço AssemblyAI por minuto de áudio (USD), configurável por env.
+# Enquanto a conta está no tier grátis (créditos iniciais), deixe 0 → custo zero,
+# mas o medidor ainda registra os MINUTOS consumidos (units) pra você ver o volume.
+# Quando virar pago, defina AAI_USD_PER_MIN no .env (ex: 0.0045 = ~US$0.27/hora Universal).
+AAI_USD_PER_MIN = float(os.environ.get("AAI_USD_PER_MIN", "0") or 0)
 
 
 def _track(user_id, operation, audio_duration_sec, project_id):
