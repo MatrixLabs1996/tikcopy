@@ -41,6 +41,12 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
   const [videoUrl, setVideoUrl] = useState('')
   const [obs, setObs] = useState('')
   const [saving, setSaving] = useState(false)
+  const [reattached, setReattached] = useState(null)
+
+  // Vídeo disponível pra subir: o original (se ainda na memória) ou um reanexado pelo user
+  const videoToUpload = videoFile || reattached
+  // Perdeu o vídeo original (ex: recarregou a página) e ainda não reanexou
+  const lostVideo = !videoFile
 
   const handleSave = async () => {
     if (!niche || !niche.trim()) {
@@ -63,11 +69,11 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
         source_video_url: videoUrl || null,
       }
 
-      if (videoFile) {
+      if (videoToUpload) {
         // Sobe o vídeo original pro R2 + salva os campos estruturados juntos.
         // Assim o anúncio no Swipe terá player de vídeo, não só texto.
         const form = new FormData()
-        form.append('file', videoFile)
+        form.append('file', videoToUpload)
         form.append('tag', 'ad')
         form.append('title', result.title || 'Anúncio')
         form.append('niche', nicheClean)
@@ -88,7 +94,7 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
           content: JSON.stringify({ ...result.avatar, niche: nicheClean, title: result.title }),
         }).catch(() => {})
       }
-      toast.success(videoFile ? 'Anúncio salvo no Swipe (com vídeo)!' : 'Anúncio salvo no Swipe!')
+      toast.success(videoToUpload ? 'Anúncio salvo no Swipe (com vídeo)!' : 'Anúncio salvo no Swipe (somente texto)!')
       onClose()
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erro ao salvar no Swipe')
@@ -102,6 +108,29 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
       borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px',
     }}>
       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>Salvar no Swipe de Ads</div>
+
+      {/* Vídeo perdido (recarregou a página) → pede pra reanexar pra salvar COM vídeo */}
+      {lostVideo && (
+        <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)' }}>
+          <div style={{ fontSize: '12.5px', color: '#f59e0b', fontWeight: 600, marginBottom: '4px' }}>
+            ⚠️ O vídeo não está mais carregado
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '8px' }}>
+            A página foi recarregada, então o arquivo do vídeo saiu da memória. Pra salvar o anúncio
+            <b> com o player de vídeo</b>, selecione o arquivo de novo abaixo. Sem ele, salva só o texto.
+          </div>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '6px', fontSize: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', cursor: 'pointer', fontFamily: 'var(--font)' }}>
+            <Upload size={13} /> {reattached ? `Vídeo: ${reattached.name}` : 'Selecionar vídeo'}
+            <input
+              type="file"
+              accept="video/*,audio/*"
+              style={{ display: 'none' }}
+              onChange={(e) => setReattached(e.target.files?.[0] || null)}
+            />
+          </label>
+        </div>
+      )}
+
       <div>
         <label className="tc-label">Link do vídeo (opcional)</label>
         <input className="tc-input" placeholder="https://..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
