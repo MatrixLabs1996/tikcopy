@@ -1176,11 +1176,11 @@ export default function CopyEditorPage() {
   }
   useEffect(() => { loadAllMemory() }, [activeProject?.id]) // eslint-disable-line
 
-  // Carrega o SWIPE FILE (orgânicos + anúncios) pra também virar referência ao escrever.
+  // Carrega o SWIPE FILE (orgânicos + anúncios) — fonte ÚNICA das referências.
   const [swipeRefs, setSwipeRefs] = useState([])
-  useEffect(() => {
+  const loadSwipeRefs = () => {
     const parse = (s) => { try { return typeof s.content === 'string' ? JSON.parse(s.content) : (s.content || {}) } catch { return {} } }
-    Promise.all([
+    return Promise.all([
       api.get('/swipes?tag=organico').then(r => r.data || []).catch(() => []),
       api.get('/swipes?tag=ad').then(r => r.data || []).catch(() => []),
     ]).then(([orgs, ads]) => {
@@ -1214,15 +1214,12 @@ export default function CopyEditorPage() {
       })
       setSwipeRefs([...mapOrg, ...mapAd])
     })
-  }, [])
+  }
+  useEffect(() => { loadSwipeRefs() }, []) // eslint-disable-line
 
-  // Referências = transcrições da memória do projeto + itens do Swipe File.
-  const referenceItems = useMemo(() => {
-    const mem = allMemory
-      .filter(m => REFERENCE_TYPES[m.type])
-      .map(m => ({ ...m, content: stripReverseEngineering(m.content || '') }))
-    return [...mem, ...swipeRefs]
-  }, [allMemory, swipeRefs])
+  // Referências = SOMENTE itens do Swipe File (fonte única).
+  // Ao excluir um anúncio/orgânico do Swipe, ele some daqui automaticamente.
+  const referenceItems = useMemo(() => [...swipeRefs], [swipeRefs])
 
   // Carrega drafts finalizados (Meus Anúncios) pra serem usados como swipe de referência
   const [finalDrafts, setFinalDrafts] = useState([])
@@ -1957,7 +1954,7 @@ export default function CopyEditorPage() {
             finalDrafts={finalDrafts}
             selectedRef={selectedRef}
             setSelectedRef={selectRef}
-            loadAllMemory={loadAllMemory}
+            loadAllMemory={() => { loadSwipeRefs(); loadAllMemory() }}
             refLoading={refLoading}
             buildAIContext={buildAIContext}
             chatKey={persistKey}
