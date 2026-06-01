@@ -86,10 +86,29 @@ def analyze_ad(file_path: str, *, track_user_id=None, operation="analise_anuncio
     if file_ref.state.name != "ACTIVE":
         raise RuntimeError(f"Gemini não processou o arquivo (estado: {file_ref.state.name}).")
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[file_ref, ANALYSIS_PROMPT],
-    )
+    # Retry com backoff em erros transientes do Gemini (503 sobrecarga, 429 rate limit).
+    response = None
+    last_exc = None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[file_ref, ANALYSIS_PROMPT],
+            )
+            break
+        except Exception as exc:
+            msg = str(exc)
+            transient = any(s in msg for s in (
+                "503", "UNAVAILABLE", "overloaded", "high demand",
+                "429", "RESOURCE_EXHAUSTED",
+            ))
+            last_exc = exc
+            if transient and attempt < 2:
+                time.sleep(2 ** (attempt + 1))  # 2s, 4s
+                continue
+            raise
+    if response is None:
+        raise last_exc or RuntimeError("Gemini não respondeu.")
 
     _track(track_user_id, operation, getattr(response, "usage_metadata", None), track_project_id)
 

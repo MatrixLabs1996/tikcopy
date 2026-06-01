@@ -1,5 +1,6 @@
 import time
 import uuid
+import logging
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, BackgroundTasks
 from typing import Optional
@@ -8,6 +9,8 @@ from app.middleware.auth import get_current_user
 from app.services import gemini, claude, assemblyai
 from app.services.supabase_client import get_supabase, save_transcript_to_memory
 from app.utils.jobs import cleanup_jobs
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -122,9 +125,32 @@ def _run_ad_pipeline_adult(job_id: str, file_path: str, filename: str, user_id: 
 def _run_ad_pipeline(job_id: str, file_path: str, filename: str, user_id: str, project_id: str | None, niche: str | None, reverse_engineer: bool = False, translate: bool = False):
     try:
         _jobs[job_id] = {"status": "analyzing", "_ts": time.time()}
-        result = gemini.analyze_ad(
-            file_path, track_user_id=user_id, operation="analise_anuncio", track_project_id=project_id,
-        )
+        try:
+            result = gemini.analyze_ad(
+                file_path, track_user_id=user_id, operation="analise_anuncio", track_project_id=project_id,
+            )
+        except Exception as gem_exc:
+            # Gemini fora (503 sobrecarga, billing, etc) → não falha: cai no AssemblyAI (só áudio).
+            # O cliente sempre recebe hook + body + 7 camadas; perde só a análise visual.
+            logger.warning(f"[ads] Gemini indisponível, fallback AssemblyAI: {gem_exc}")
+            _jobs[job_id] = {"status": "transcribing", "_ts": time.time()}
+            transcript = assemblyai.transcribe_file(
+                file_path, track_user_id=user_id, operation="transcricao_anuncio", track_project_id=project_id,
+            )
+            if not transcript:
+                raise ValueError("Transcrição retornou vazia.")
+            split = claude.split_hook_body(transcript)
+            result = {
+                "title": Path(filename).stem,
+                "duration": "—",
+                "avatar": {},
+                "video_format": "",
+                "editing": {},
+                "hook_visual": "(análise visual indisponível no momento — usei transcrição por áudio)",
+                "hook_written": split["hook"],
+                "landing_phrase": "",
+                "body": claude._break_into_paragraphs(transcript),
+            }
 
         if translate:
             _jobs[job_id] = {"status": "translating", "_ts": time.time()}
