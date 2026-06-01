@@ -135,7 +135,7 @@ export default function ProgressBar({ currentStatus, steps, compact = false }) {
 
 export const VSL_STEPS         = ['queued', 'transcribing', 'translating', 'analyzing', 'saving', 'done']
 export const VSL_COMPARE_STEPS = ['queued', 'analyzing_vsl1', 'analyzing_vsl2', 'comparing', 'done']
-export const AD_STEPS          = ['queued', 'analyzing', 'translating', 'reverse_engineering', 'saving', 'done']
+export const AD_STEPS          = ['queued', 'analyzing', 'translating', 'reverse_engineering', 'seven_layers', 'saving', 'done']
 export const ORGANIC_URL_STEPS = ['queued', 'downloading', 'transcribing', 'translating', 'formatting', 'saving', 'done']
 export const ORGANIC_UPLOAD_STEPS = ['queued', 'transcribing', 'translating', 'formatting', 'saving', 'done']
 export const LESSON_STEPS = ['queued', 'transcribing', 'translating', 'saving', 'done']

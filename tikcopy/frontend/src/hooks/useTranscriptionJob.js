@@ -95,6 +95,7 @@ export const STATUS_LABELS = {
   listing: 'Listando vídeos do perfil...',
   reading_comments: 'Lendo comentários...',
   reverse_engineering: 'Fazendo engenharia reversa...',
+  seven_layers: 'Extraindo as 7 camadas macro...',
   analyzing_vsl1: 'Analisando VSL 1...',
   analyzing_vsl2: 'Analisando VSL 2...',
   comparing: 'Comparando VSLs — identificando padrões...',

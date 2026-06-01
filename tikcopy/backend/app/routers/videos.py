@@ -291,6 +291,20 @@ def _run_swipe_transcription(job_id: str, swipe_id: str, user_id: str):
                 content["body"] = split["body"]
             analyzed = {"engine": "assemblyai", "hook": split.get("hook", ""), "body": paragraphed}
 
+        # 7 Camadas Macro — aproveita formato/avatar se o Gemini extraiu
+        _transcribe_jobs[job_id] = {"status": "seven_layers", "_ts": time.time()}
+        seven_layers = claude.analyze_seven_layers(
+            hook=content.get("hook_written", ""),
+            body=content.get("body", ""),
+            video_format=content.get("format", ""),
+            avatar=content.get("avatar"),
+            niche=content.get("niche", ""),
+            track_user_id=user_id,
+        )
+        if seven_layers:
+            content["seven_layers"] = seven_layers
+            analyzed["seven_layers"] = seven_layers
+
         sb.table("swipes").update({"content": json.dumps(content)}).eq("id", swipe_id).execute()
 
         _transcribe_jobs[job_id] = {

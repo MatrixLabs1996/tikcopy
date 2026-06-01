@@ -320,8 +320,18 @@ export function buildVSLTranscriptTxt({ filename, transcript }) {
   return lines.join('\n')
 }
 
+const SEVEN_LAYER_LABELS = [
+  ['estrutura_invisivel', '1. Estrutura Invisível'],
+  ['formato', '2. Formato'],
+  ['angulo', '3. Ângulo'],
+  ['fatia_publico', '4. Fatia de Público'],
+  ['avatar', '5. Avatar'],
+  ['tema', '6. Tema'],
+  ['nivel_consciencia', '7. Nível de Consciência'],
+]
+
 export function buildAdTxt(result) {
-  const { title, hook_written, body, reverse_engineering } = result
+  const { title, hook_written, body, reverse_engineering, seven_layers } = result
   const lines = []
   lines.push(`── ANÚNCIO — ${title || 'Sem título'}`)
   lines.push('='.repeat(60))
@@ -345,6 +355,27 @@ export function buildAdTxt(result) {
     lines.push('── ENGENHARIA REVERSA')
     lines.push('-'.repeat(40))
     lines.push(reverse_engineering)
+  }
+
+  // 5. 7 CAMADAS MACRO (só se houver)
+  if (seven_layers) {
+    lines.push('')
+    lines.push('='.repeat(60))
+    lines.push('── 7 CAMADAS MACRO')
+    lines.push('-'.repeat(40))
+    for (const [key, label] of SEVEN_LAYER_LABELS) {
+      const layer = seven_layers[key]
+      if (!layer) continue
+      const valor = typeof layer === 'string' ? layer : layer.valor
+      const just = typeof layer === 'object' ? layer.justificativa : ''
+      if (!valor) continue
+      lines.push(`${label}: ${valor}`)
+      if (just) lines.push(`   ${just}`)
+    }
+    if (seven_layers.coerencia) {
+      lines.push('')
+      lines.push(`Coerência & Variação: ${seven_layers.coerencia}`)
+    }
   }
   return lines.join('\n')
 }

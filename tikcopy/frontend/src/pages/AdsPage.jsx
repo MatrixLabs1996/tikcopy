@@ -8,6 +8,7 @@ import { buildAdTxt } from '../utils/download'
 import DownloadMenu from '../components/DownloadMenu'
 import Markdown from '../components/Markdown'
 import NicheSelect from '../components/NicheSelect'
+import SevenLayers from '../components/SevenLayers'
 import usePersistedState, { clearPersistedKeys } from '../hooks/usePersistedState'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -57,6 +58,7 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
         landing_phrase: result.landing_phrase,
         body: result.body,
         avatar: result.avatar,
+        seven_layers: result.seven_layers || null,
         observations: obs,
         source_video_url: videoUrl || null,
       }
@@ -189,6 +191,7 @@ function AdResult({ result, niche, projectId, videoFile }) {
           </div>
         </div>
       )}
+      {result.seven_layers && <SevenLayers data={result.seven_layers} />}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         <button onClick={() => setShowSwipe((v) => !v)} className="tc-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Layers size={13} /> Salvar no Swipe

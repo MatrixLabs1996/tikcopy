@@ -51,6 +51,17 @@ def _run_ad_pipeline_adult(job_id: str, file_path: str, filename: str, user_id: 
                 landing_phrase=formatted.get("landing_phrase", ""),
             )
 
+        # 7 Camadas Macro (sem dica visual — infere do texto)
+        _jobs[job_id] = {"status": "seven_layers", "_ts": time.time()}
+        seven_layers = claude.analyze_seven_layers(
+            hook=formatted.get("hook", ""),
+            body=formatted.get("body", ""),
+            landing_phrase=formatted.get("landing_phrase", ""),
+            niche=niche,
+            track_user_id=user_id,
+            track_project_id=project_id,
+        )
+
         _jobs[job_id] = {"status": "saving", "_ts": time.time()}
         title = Path(filename).stem
         sb = get_supabase()
@@ -68,6 +79,7 @@ def _run_ad_pipeline_adult(job_id: str, file_path: str, filename: str, user_id: 
                 "adult": True,
                 "transcription_engine": "assemblyai",
                 "reverse_engineering": reverse_engineering,
+                "seven_layers": seven_layers,
             },
         }).execute()
 
@@ -99,6 +111,7 @@ def _run_ad_pipeline_adult(job_id: str, file_path: str, filename: str, user_id: 
                 "landing_phrase": formatted["landing_phrase"],
                 "body": formatted["body"],
                 "reverse_engineering": reverse_engineering,
+                "seven_layers": seven_layers,
                 "adult": True,
             },
         }
@@ -134,6 +147,20 @@ def _run_ad_pipeline(job_id: str, file_path: str, filename: str, user_id: str, p
                 landing_phrase=result.get("landing_phrase", ""),
             )
 
+        # 7 Camadas Macro (sempre roda) — aproveita formato/avatar do Gemini
+        _jobs[job_id] = {"status": "seven_layers"}
+        seven_layers = claude.analyze_seven_layers(
+            hook=result.get("hook_written", ""),
+            body=result.get("body", ""),
+            landing_phrase=result.get("landing_phrase", ""),
+            video_format=result.get("video_format", ""),
+            avatar=result.get("avatar"),
+            niche=niche,
+            track_user_id=user_id,
+            track_project_id=project_id,
+        )
+        result["seven_layers"] = seven_layers
+
         _jobs[job_id] = {"status": "saving"}
         sb = get_supabase()
         record = sb.table("transcriptions").insert({
@@ -153,6 +180,7 @@ def _run_ad_pipeline(job_id: str, file_path: str, filename: str, user_id: str, p
                 "editing": result["editing"],
                 "hook_visual": result["hook_visual"],
                 "reverse_engineering": reverse_engineering,
+                "seven_layers": seven_layers,
             },
         }).execute()
 

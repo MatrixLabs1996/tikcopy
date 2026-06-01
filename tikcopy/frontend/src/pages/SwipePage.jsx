@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import useAppStore from '../stores/useAppStore'
 import DownloadMenu from '../components/DownloadMenu'
+import SevenLayers from '../components/SevenLayers'
 
 // Monta o TXT de um anúncio do swipe pra download (hook visual, hook, body, avatar, edição)
 function buildAdSwipeTxt(c) {
@@ -30,6 +31,25 @@ function buildAdSwipeTxt(c) {
   if (c.editing && Object.values(c.editing).some(Boolean)) {
     L.push('── EDIÇÃO'); L.push('-'.repeat(40))
     Object.entries(c.editing).filter(([, v]) => v).forEach(([k, v]) => L.push(`${k.replace(/_/g, ' ')}: ${v}`))
+    L.push('')
+  }
+  if (c.seven_layers) {
+    const SL = [
+      ['estrutura_invisivel', '1. Estrutura Invisível'], ['formato', '2. Formato'],
+      ['angulo', '3. Ângulo'], ['fatia_publico', '4. Fatia de Público'],
+      ['avatar', '5. Avatar'], ['tema', '6. Tema'], ['nivel_consciencia', '7. Nível de Consciência'],
+    ]
+    L.push('── 7 CAMADAS MACRO'); L.push('-'.repeat(40))
+    for (const [k, label] of SL) {
+      const layer = c.seven_layers[k]
+      if (!layer) continue
+      const valor = typeof layer === 'string' ? layer : layer.valor
+      const just = typeof layer === 'object' ? layer.justificativa : ''
+      if (!valor) continue
+      L.push(`${label}: ${valor}`)
+      if (just) L.push(`   ${just}`)
+    }
+    if (c.seven_layers.coerencia) { L.push(''); L.push(`Coerência & Variação: ${c.seven_layers.coerencia}`) }
     L.push('')
   }
   if (c.observations) { L.push('── OBSERVAÇÕES'); L.push('-'.repeat(40)); L.push(c.observations) }
@@ -2569,6 +2589,13 @@ function AdDetailsModal({ swipe, onClose, onUseAsReference, onEdit }) {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* 7 Camadas Macro */}
+            {c.seven_layers && (
+              <div style={{ marginBottom: '14px' }}>
+                <SevenLayers data={c.seven_layers} />
               </div>
             )}
           </div>

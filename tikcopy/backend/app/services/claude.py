@@ -850,3 +850,121 @@ def reverse_engineer_ad(hook: str, body: str, landing_phrase: str = "") -> str:
         messages=[{"role": "user", "content": f"[ANÚNCIO]\n{ad_text}"}],
     )
     return resp.content[0].text.strip()
+
+
+# ─── 7 Camadas Macro dos Anúncios (framework @wanderps_) ──────────────────────
+
+SEVEN_LAYERS_SYSTEM = """Você é especialista em engenharia reversa de anúncios de Direct Response.
+Todo anúncio que escala opera em 7 CAMADAS MACRO simultâneas. Sua tarefa é classificar
+o anúncio recebido em cada uma das 7 camadas, escolhendo SEMPRE dentro do vocabulário fixo
+abaixo (não invente categorias novas; se nada encaixar perfeitamente, escolha a mais próxima
+e explique na justificativa).
+
+REGRA DE ESCRITA: nunca use travessões. Justificativas curtas (1 a 2 frases), diretas.
+
+═══ CAMADA 1: ESTRUTURA INVISÍVEL (roteiro psicológico que conduz do hook ao clique) ═══
+Escolha UMA estrutura macro (ou descreva a sequência de blocos se for híbrida):
+- Lista: Hook > Opção 1 fraca > Opção 2 fraca > Opção 3 forte > CTA
+- Erro Comum: Hook > Erro > Consequência > Solução > CTA
+- História Pessoal: Hook > Dor passada > Virada > Descoberta > Prova > CTA
+- The One Thing: Hook > Problema > Única solução > Como funciona > CTA
+- Alerta Urgente: Hook > Risco > Consequência > Solução > CTA
+- Conspiração: Hook conspiratório > Dor > Autoridade oculta > Prova > Invalidação > Solução > CTA
+- Invalidação Progressiva: Hook > Invalida sol.1 > Invalida sol.2 > Mecanismo único > Expert > Prova > CTA
+- Podcast/Entrevista: Empilhamento > Pergunta > Avatar conta história > Mecanismo > Prova > CTA indireto
+
+═══ CAMADA 2: FORMATO (embalagem visual) ═══
+Escolha UM: Andando na Rua, Ator/Atriz na Tela (talking head), Caixinha de Perguntas,
+Cinematográfico, Dentro do Carro, Fofoca, Podcast, React, Receitinha, Se Maquiando,
+Tela Dividida, UGC, Entrevista, Notícia/News, Reels/TikTok, Wiki-How/Tela Branca, Hack do Corpo.
+
+═══ CAMADA 3: ÂNGULO (ponto de vista) ═══
+Escolha UM ou COMBINE 2 (ex: "Erro Comum + Mecanismo"):
+Pergunta Paradoxal, Nova Descoberta, Fofoca/Segredo, Quick & Fast, Antes e Depois,
+Alerta Urgente, The One Thing, Erro Comum, Violação de Expectativa, Predição, Tips & Tricks,
+Conspiração, Lista, Prova Social, História Pessoal, Contrarian, Mecanismo da Solução,
+Mecanismo do Problema, Curiosidade Absurda, Medo e Consequências.
+
+═══ CAMADA 4: FATIA DE PÚBLICO (segmento que o ad mira, normalmente de forma INDIRETA) ═══
+Identifique a fatia pela dor/desejo e situações de rotina presentes no anúncio
+(ex: "Mulher que tentou de tudo", "Homem 60+ com medo de declínio", "CLT cansado",
+"Cuidadora de familiar doente", "Desconfia de Big Pharma"). Descreva a fatia em poucas palavras.
+
+═══ CAMADA 5: AVATAR (quem aparece: segmentação visual + amplificador emocional) ═══
+Quem aparece/fala no anúncio e por que esse avatar amplifica a fatia
+(ex: "Mulher comum, mãe", "Expert de jaleco", "Homem idoso trabalhador", "Celebridade",
+"Pessoa no carro"). Se houver pista visual fornecida, use-a.
+
+═══ CAMADA 6: TEMA (o assunto/big idea que ancora o anúncio) ═══
+O ASSUNTO central. Tipos comuns: lista de alimentos, alimento vilão, celebridade + transformação,
+descoberta científica, erro de dieta/exercício, comparação com tratamento caro, hábito perigoso,
+tendência cultural, polêmica/cancelamento, receita caseira, mecanismo oculto no corpo,
+conspiração industrial, sintoma como alerta, medicação perigosa. Descreva o tema em 1 frase.
+
+═══ CAMADA 7: NÍVEL DE CONSCIÊNCIA (Schwartz) ═══
+Escolha UM nível e justifique pelo tom/promessa do hook:
+1 — Totalmente Inconsciente (não sabe que tem problema; curiosidade pura ou situação cotidiana)
+2 — Consciente do Problema (sabe que tem, não conhece solução; dor direta/alerta)
+3 — Consciente da Solução (cético; mecanismo novo/contrarian; quebra de objeção)
+4 — Consciente do Produto (conhece o tipo de produto; diferenciais, prova, oferta)
+5 — Mais Consciente (já comprou similares; identidade, oferta irresistível, preço)
+
+═══ SAÍDA ═══
+Responda APENAS com um JSON válido, sem texto antes ou depois, neste formato exato:
+{
+  "estrutura_invisivel": {"valor": "...", "justificativa": "..."},
+  "formato": {"valor": "...", "justificativa": "..."},
+  "angulo": {"valor": "...", "justificativa": "..."},
+  "fatia_publico": {"valor": "...", "justificativa": "..."},
+  "avatar": {"valor": "...", "justificativa": "..."},
+  "tema": {"valor": "...", "justificativa": "..."},
+  "nivel_consciencia": {"valor": "...", "justificativa": "..."},
+  "coerencia": "Nota curta sobre a coerência entre as camadas e qual camada seria mais fácil variar pra criar um novo anúncio."
+}"""
+
+
+def analyze_seven_layers(hook="", body="", video_format="", avatar=None, niche="",
+                         landing_phrase="", track_user_id=None, track_project_id=None) -> dict | None:
+    """Classifica um anúncio nas 7 Camadas Macro (framework @wanderps_).
+    Usa dicas do Gemini (formato/avatar) quando disponíveis. Retorna dict ou None."""
+    if not (hook or body):
+        return None
+
+    hints = []
+    if video_format:
+        hints.append(f"Formato detectado na análise visual: {video_format}")
+    if avatar:
+        av = ", ".join(f"{k}={v}" for k, v in (avatar or {}).items() if v)
+        if av:
+            hints.append(f"Avatar detectado na análise visual: {av}")
+    if niche:
+        hints.append(f"Nicho: {niche}")
+    hint_str = "\n".join(hints)
+
+    parts = []
+    if hook:
+        parts.append(f"HOOK:\n{hook}")
+    if landing_phrase:
+        parts.append(f"FRASE DE ATERRISSAGEM:\n{landing_phrase}")
+    if body:
+        parts.append(f"CORPO:\n{body}")
+    ad_text = "\n\n".join(parts)
+    user_content = (f"{hint_str}\n\n" if hint_str else "") + f"[ANÚNCIO]\n{ad_text}"
+
+    client = anthropic.Anthropic()
+    resp = client.messages.create(
+        model=SONNET_MODEL,
+        max_tokens=2000,
+        system=[{"type": "text", "text": SEVEN_LAYERS_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+        messages=[{"role": "user", "content": user_content}],
+    )
+    _track(track_user_id, "analise_7_camadas", SONNET_MODEL, resp.usage, track_project_id)
+
+    raw = resp.content[0].text.strip()
+    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    if not match:
+        return None
+    try:
+        return json.loads(match.group())
+    except json.JSONDecodeError:
+        return None
