@@ -35,9 +35,8 @@ Retorne SOMENTE um JSON válido, sem texto antes ou depois.
     "elementos_visuais": "cortes, gráficos, imagens de apoio, etc"
   },
   "hook_visual": "o que aparece nos primeiros 2-3 segundos: elementos em cena, headline na tela, formato do hook. REGRA IMPORTANTE: se uma pessoa aparece falando por cima de um vídeo sem fundo próprio = React (NÃO tela dividida). Tela dividida = dois painéis lado a lado. Outros formatos: frente à câmera, receita, notícia, UGC, podcast, etc",
-  "hook_escrito": "primeiras 3-5 frases exatamente como foram ditas",
-  "frase_aterrissagem": "frases de transição do hook para o corpo — ideia central que conecta os dois (2-4 frases)",
-  "corpo": "TRANSCRIÇÃO LITERAL E COMPLETA de tudo que é falado no vídeo após o hook escrito — palavra por palavra, exatamente como foi dito, sem resumir, sem comentar, sem parafrasear. Se houver múltiplas vozes, transcreva todas na ordem em que aparecem."
+  "hook_escrito": "primeiras 3-5 frases exatamente como foram ditas (apenas o gancho de abertura)",
+  "corpo": "TRANSCRIÇÃO LITERAL E COMPLETA de TUDO que é falado no vídeo APÓS as frases do hook escrito, palavra por palavra, na ordem exata, do começo ao fim do vídeo. REGRAS CRÍTICAS: (1) Comece exatamente na primeira palavra dita logo depois do hook. (2) NÃO pule NENHUMA frase, incluindo frases de transição/conexão entre o hook e o restante. (3) NÃO resuma, NÃO comente, NÃO parafraseie. (4) Vá até a última palavra falada no vídeo, incluindo o CTA final. (5) Se houver múltiplas vozes, transcreva todas na ordem em que aparecem. O hook + o corpo, juntos, devem reconstruir o áudio INTEIRO do anúncio sem nenhum trecho faltando."
 }"""
 
 
