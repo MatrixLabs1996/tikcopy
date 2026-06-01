@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 AAI_BASE = "https://api.assemblyai.com/v2"
 
 # Preço AssemblyAI por minuto de áudio (USD), configurável por env.
-# Enquanto a conta está no tier grátis (créditos iniciais), deixe 0 → custo zero,
-# mas o medidor ainda registra os MINUTOS consumidos (units) pra você ver o volume.
-# Quando virar pago, defina AAI_USD_PER_MIN no .env (ex: 0.0045 = ~US$0.27/hora Universal).
-AAI_USD_PER_MIN = float(os.environ.get("AAI_USD_PER_MIN", "0") or 0)
+# Default = tarifa PAGA (~US$0.27/hora Universal = 0.0045/min). Mesmo no free tier,
+# medimos o custo REAL por usuário pra precificar os planos com a economia verdadeira
+# (o crédito grátis é temporário). Pra zerar em algum cenário, defina AAI_USD_PER_MIN=0.
+AAI_USD_PER_MIN = float(os.environ.get("AAI_USD_PER_MIN", "0.0045") or 0)
 
 
 def _track(user_id, operation, audio_duration_sec, project_id):
