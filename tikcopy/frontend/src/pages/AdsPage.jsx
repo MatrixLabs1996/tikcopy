@@ -37,7 +37,7 @@ async function saveHookToSwipe(result, niche) {
 
 // ─── SaveSwipePanel ───────────────────────────────────────────────────────────
 
-function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
+function SaveSwipePanel({ result, niche, projectId, onClose, onSaved, videoFile }) {
   const [obs, setObs] = useState('')
   const [saving, setSaving] = useState(false)
   const [reattached, setReattached] = useState(null)
@@ -97,6 +97,7 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
         }).catch(() => {})
       }
       toast.success(videoToUpload ? 'Anúncio salvo no Swipe (com vídeo)!' : 'Anúncio salvo no Swipe (somente texto)!')
+      onSaved?.()
       onClose()
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erro ao salvar no Swipe')
@@ -164,6 +165,7 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
 
 function AdResult({ result, niche, projectId, videoFile }) {
   const [showSwipe, setShowSwipe] = useState(false)
+  const [savedToSwipe, setSavedToSwipe] = useState(false)
   if (!result) return null
   const { title, duration, avatar = {}, video_format, editing = {}, hook_visual, hook_written, landing_phrase, body } = result
 
@@ -235,9 +237,18 @@ function AdResult({ result, niche, projectId, videoFile }) {
       )}
       {result.seven_layers && <SevenLayers data={result.seven_layers} />}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        <button onClick={() => setShowSwipe((v) => !v)} className="tc-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Layers size={13} /> Salvar no Swipe
-        </button>
+        {savedToSwipe ? (
+          <button
+            onClick={() => setShowSwipe(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 14px', borderRadius: '7px', fontSize: '13px', fontWeight: 600, background: 'rgba(34,197,94,0.12)', border: '1px solid #22c55e', color: '#22c55e', cursor: 'pointer', fontFamily: 'var(--font)' }}
+          >
+            <CheckCircle2 size={14} /> Salvo no Swipe
+          </button>
+        ) : (
+          <button onClick={() => setShowSwipe((v) => !v)} className="tc-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Layers size={13} /> Salvar no Swipe
+          </button>
+        )}
         {result.reverse_engineering && (
           <button
             onClick={async () => {
@@ -263,7 +274,7 @@ function AdResult({ result, niche, projectId, videoFile }) {
           <Bookmark size={12} /> Salvar hook no Swipe
         </button>
       </div>
-      {showSwipe && <SaveSwipePanel result={result} niche={niche} projectId={projectId} videoFile={videoFile} onClose={() => setShowSwipe(false)} />}
+      {showSwipe && <SaveSwipePanel result={result} niche={niche} projectId={projectId} videoFile={videoFile} onSaved={() => setSavedToSwipe(true)} onClose={() => setShowSwipe(false)} />}
     </div>
   )
 }
