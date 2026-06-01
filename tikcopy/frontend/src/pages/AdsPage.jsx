@@ -54,8 +54,12 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
     const nicheClean = niche.trim()
     setSaving(true)
     try {
+      // Nome do card no Swipe = nome do arquivo upado (sem extensão), não o título da IA.
+      const baseName = (f) => (f && f.name ? f.name.replace(/\.[^./\\]+$/, '').trim() : '')
+      const swipeTitle = baseName(videoFile) || baseName(reattached) || result.title || 'Anúncio'
+
       const structured = {
-        title: result.title,
+        title: swipeTitle,
         niche: nicheClean,
         format: result.video_format,
         hook_written: result.hook_written,
@@ -73,7 +77,7 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
         const form = new FormData()
         form.append('file', videoToUpload)
         form.append('tag', 'ad')
-        form.append('title', result.title || 'Anúncio')
+        form.append('title', swipeTitle)
         form.append('niche', nicheClean)
         if (result.video_format) form.append('formato', result.video_format)
         if (projectId) form.append('project_id', projectId)
@@ -89,7 +93,7 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
       if (result.avatar && Object.values(result.avatar).some(Boolean)) {
         await api.post('/swipes', {
           tag: 'avatar',
-          content: JSON.stringify({ ...result.avatar, niche: nicheClean, title: result.title }),
+          content: JSON.stringify({ ...result.avatar, niche: nicheClean, title: swipeTitle }),
         }).catch(() => {})
       }
       toast.success(videoToUpload ? 'Anúncio salvo no Swipe (com vídeo)!' : 'Anúncio salvo no Swipe (somente texto)!')
