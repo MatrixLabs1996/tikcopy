@@ -134,7 +134,7 @@ async def suggest_field(
         raise HTTPException(status_code=404, detail="Rascunho não encontrado")
 
     context = body.context or draft.data.get("fields_data") or {}
-    suggestion = claude.suggest_copy_field(body.field_name, body.field_label, context)
+    suggestion = claude.suggest_copy_field(body.field_name, body.field_label, context, track_user_id=current_user.id)
     return {"suggestion": suggestion}
 
 

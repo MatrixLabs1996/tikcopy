@@ -41,7 +41,30 @@ Retorne SOMENTE um JSON válido, sem texto antes ou depois.
 }"""
 
 
-def analyze_ad(file_path: str) -> dict:
+# Preço gemini-2.5-flash: in US$0.30/M, out US$2.50/M (vídeo/áudio é tokenizado no input).
+GEMINI_IN_PER_M = 0.30
+GEMINI_OUT_PER_M = 2.50
+
+
+def _track(user_id, operation, usage_metadata, project_id):
+    """Registra o custo da análise Gemini no medidor (best-effort)."""
+    if not user_id or usage_metadata is None:
+        return
+    try:
+        from app.services.usage_tracker import track_flat
+        inp = getattr(usage_metadata, "prompt_token_count", 0) or 0
+        out = getattr(usage_metadata, "candidates_token_count", 0) or 0
+        cost = (inp * GEMINI_IN_PER_M + out * GEMINI_OUT_PER_M) / 1_000_000
+        track_flat(
+            user_id=user_id, operation=operation, provider="gemini",
+            model="gemini-2.5-flash", cost_usd=cost, project_id=project_id,
+            meta={"input_tokens": inp, "output_tokens": out},
+        )
+    except Exception:
+        pass
+
+
+def analyze_ad(file_path: str, *, track_user_id=None, operation="analise_anuncio", track_project_id=None) -> dict:
     """Analyze an ad video/audio file using Gemini 2.5 Flash."""
     try:
         from google import genai as google_genai
@@ -67,6 +90,8 @@ def analyze_ad(file_path: str) -> dict:
         model="gemini-2.5-flash",
         contents=[file_ref, ANALYSIS_PROMPT],
     )
+
+    _track(track_user_id, operation, getattr(response, "usage_metadata", None), track_project_id)
 
     try:
         client.files.delete(name=file_ref.name)

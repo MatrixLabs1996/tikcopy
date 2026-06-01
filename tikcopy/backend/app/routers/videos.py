@@ -250,7 +250,7 @@ def _run_swipe_transcription(job_id: str, swipe_id: str, user_id: str):
 
         analyzed = None
         try:
-            r = gemini.analyze_ad(tmp_path)
+            r = gemini.analyze_ad(tmp_path, track_user_id=user_id, operation="analise_anuncio")
             body = claude._break_into_paragraphs(r.get("body", "")) if r.get("body") else ""
             # Mescla a análise rica no conteúdo do swipe
             content["hook_written"]  = r.get("hook_written", "") or content.get("hook_written", "")
@@ -279,7 +279,7 @@ def _run_swipe_transcription(job_id: str, swipe_id: str, user_id: str):
 
         # Fallback: AssemblyAI (só áudio) se o Gemini não rolou
         if analyzed is None:
-            transcript = assemblyai.transcribe_file(tmp_path)
+            transcript = assemblyai.transcribe_file(tmp_path, track_user_id=user_id, operation="transcricao_anuncio")
             if not transcript:
                 raise ValueError("Transcrição retornou vazia.")
             split = claude.split_hook_body(transcript)

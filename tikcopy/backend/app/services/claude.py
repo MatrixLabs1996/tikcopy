@@ -26,7 +26,7 @@ HOOK_TYPES = ["pergunta", "dor", "promessa", "contrarian", "story", "numero", "a
 HOOK_EMOTIONS = ["medo", "raiva", "curiosidade", "esperanca", "urgencia", "desejo", "identificacao"]
 
 
-def classify_hook(hook_text: str, existing_custom_types: list[str] | None = None) -> dict:
+def classify_hook(hook_text: str, existing_custom_types: list[str] | None = None, track_user_id=None) -> dict:
     """Classifica um hook em tipo + emoção dominante.
     Pode criar tipo novo se nenhum dos fixos/custom existentes encaixar bem.
     Retorna: {hook_type, emotion, is_new_type}"""
@@ -81,6 +81,7 @@ def classify_hook(hook_text: str, existing_custom_types: list[str] | None = None
             '{"hook_type": "snake_case", "emotion": "...", "is_new_type": true/false}'
         )}],
     )
+    _track(track_user_id, "classificar_hook", HAIKU_MODEL, resp.usage)
     raw = resp.content[0].text.strip()
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     if match:
@@ -105,7 +106,7 @@ def classify_hook(hook_text: str, existing_custom_types: list[str] | None = None
     return {"hook_type": None, "emotion": None, "is_new_type": False}
 
 
-def translate_to_portuguese(text: str) -> str:
+def translate_to_portuguese(text: str, track_user_id=None) -> str:
     """Traduz qualquer texto para PT-BR mantendo o tom original (publicitário, conversacional, etc).
     Se já estiver em PT-BR, devolve o original sem alterar."""
     if not text or not text.strip():
@@ -135,6 +136,7 @@ def translate_to_portuguese(text: str) -> str:
                 f"Texto:\n{chunk}"
             )}],
         )
+        _track(track_user_id, "traducao", HAIKU_MODEL, resp.usage)
         translated_parts.append(resp.content[0].text.strip())
 
     return "\n".join(translated_parts)
@@ -614,7 +616,7 @@ def analyze_audience_voice(comments: list[dict], niche: str = "", author: str = 
     return final.content[0].text.strip()
 
 
-def suggest_copy_field(field_name: str, field_label: str, context: dict) -> str:
+def suggest_copy_field(field_name: str, field_label: str, context: dict, track_user_id=None) -> str:
     """Suggest content for a copy draft field using Claude."""
     client = anthropic.Anthropic()
     ctx_str = json.dumps(context, ensure_ascii=False, indent=2)
@@ -627,6 +629,7 @@ def suggest_copy_field(field_name: str, field_label: str, context: dict) -> str:
             f"Escreva apenas o conteúdo do campo '{field_label}', sem explicações."
         )}],
     )
+    _track(track_user_id, "sugerir_campo", HAIKU_MODEL, resp.usage)
     return resp.content[0].text.strip()
 
 

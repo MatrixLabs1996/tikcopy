@@ -7,6 +7,27 @@ logger = logging.getLogger(__name__)
 
 AAI_BASE = "https://api.assemblyai.com/v2"
 
+# Preço AssemblyAI (modelo Universal async) ~= US$0.27/hora = US$0.0045/min.
+# Ajuste aqui se mudar de plano/modelo.
+AAI_USD_PER_MIN = 0.0045
+
+
+def _track(user_id, operation, audio_duration_sec, project_id):
+    """Registra o custo da transcrição no medidor (best-effort, nunca derruba o job)."""
+    if not user_id:
+        return
+    try:
+        from app.services.usage_tracker import track_flat
+        minutes = (audio_duration_sec or 0) / 60.0
+        track_flat(
+            user_id=user_id, operation=operation, provider="assemblyai",
+            model="universal", cost_usd=minutes * AAI_USD_PER_MIN,
+            units=round(minutes, 3), project_id=project_id,
+            meta={"seconds": audio_duration_sec},
+        )
+    except Exception as exc:
+        logger.warning(f"[AAI] falha ao registrar uso: {exc}")
+
 
 def _key() -> str:
     key = os.environ.get("ASSEMBLYAI_KEY", "")
@@ -63,7 +84,7 @@ def upload_file(file_path: str) -> str:
     raise RuntimeError(f"Upload falhou após {MAX_UPLOAD_RETRIES} tentativas. Verifique sua conexão. Último erro: {last_err}")
 
 
-def transcribe(audio_url: str) -> str:
+def transcribe(audio_url: str, *, track_user_id=None, operation="transcricao", track_project_id=None) -> str:
     """Submit transcription job and poll until done. Returns transcript text."""
     logger.info(f"[AAI] Starting transcription for {audio_url}")
     resp = requests.post(
@@ -90,13 +111,17 @@ def transcribe(audio_url: str) -> str:
         status = data.get("status")
         logger.info(f"[AAI] Transcript status: {status}")
         if status == "completed":
+            _track(track_user_id, operation, data.get("audio_duration"), track_project_id)
             return data.get("text") or ""
         if status == "error":
             raise RuntimeError(f"AAI transcription error: {data.get('error')}")
         time.sleep(5)
 
 
-def transcribe_file(file_path: str) -> str:
+def transcribe_file(file_path: str, *, track_user_id=None, operation="transcricao", track_project_id=None) -> str:
     """Upload + transcribe a local file."""
     audio_url = upload_file(file_path)
-    return transcribe(audio_url)
+    return transcribe(
+        audio_url, track_user_id=track_user_id,
+        operation=operation, track_project_id=track_project_id,
+    )

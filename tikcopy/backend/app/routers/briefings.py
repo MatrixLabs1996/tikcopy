@@ -25,14 +25,14 @@ TEMP_DIR.mkdir(parents=True, exist_ok=True)
 _vsl_jobs: dict = {}
 
 
-def _run_vsl_extract(job_id: str, file_path: Optional[str], transcript: Optional[str]):
+def _run_vsl_extract(job_id: str, file_path: Optional[str], transcript: Optional[str], user_id: Optional[str] = None):
     """Roda transcrição (se necessário) + extração de campos via Claude."""
     try:
         if transcript:
             text = transcript
         else:
             _vsl_jobs[job_id] = {"status": "transcribing", "_ts": time.time()}
-            text = assemblyai.transcribe_file(file_path)
+            text = assemblyai.transcribe_file(file_path, track_user_id=user_id, operation="transcricao_vsl")
             if not text:
                 raise ValueError("Transcrição retornou vazia.")
 
@@ -79,7 +79,7 @@ async def extract_vsl_from_file(
 
     cleanup_jobs(_vsl_jobs)
     _vsl_jobs[job_id] = {"status": "queued", "_ts": time.time()}
-    background_tasks.add_task(_run_vsl_extract, job_id, file_path, transcript)
+    background_tasks.add_task(_run_vsl_extract, job_id, file_path, transcript, current_user.id)
     return {"job_id": job_id}
 
 

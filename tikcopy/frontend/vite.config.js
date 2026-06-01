@@ -21,6 +21,13 @@ export default defineConfig({
         // carregamento paralelo (o bundle único passava de 1.4 MB).
         manualChunks(id) {
           if (!id.includes('node_modules')) return
+          // CORE DO REACT em um chunk só (react, react-dom, scheduler, router, jsx-runtime).
+          // Tem que vir ANTES de qualquer outra regra — senão deps internas (scheduler)
+          // caem no 'vendor' e criam dependência circular vendor<->react-vendor → tela
+          // preta em produção (o React fica indefinido no boot).
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|use-sync-external-store|@remix-run[\\/]router)[\\/]/.test(id)) {
+            return 'react-vendor'
+          }
           // Libs importadas dinamicamente (download.js / BriefingViewerPage) —
           // deixa o Rollup mantê-las como chunks lazy (carregam só quando usadas).
           if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('dompurify')) return
@@ -31,7 +38,6 @@ export default defineConfig({
           if (id.includes('react-virtuoso')) return 'virtuoso'
           if (id.includes('@tanstack')) return 'query'
           if (id.includes('@supabase')) return 'supabase'
-          if (id.includes('react-router') || id.includes('react-dom') || id.includes('/react/')) return 'react-vendor'
           return 'vendor'
         },
       },

@@ -22,13 +22,15 @@ def _run_ad_pipeline_adult(job_id: str, file_path: str, filename: str, user_id: 
     Pula análise visual do Gemini que bloqueia conteúdo adulto."""
     try:
         _jobs[job_id] = {"status": "transcribing", "_ts": time.time()}
-        transcript = assemblyai.transcribe_file(file_path)
+        transcript = assemblyai.transcribe_file(
+            file_path, track_user_id=user_id, operation="transcricao_anuncio", track_project_id=project_id,
+        )
         if not transcript:
             raise ValueError("Transcrição retornou vazia.")
 
         if translate:
             _jobs[job_id] = {"status": "translating", "_ts": time.time()}
-            transcript = claude.translate_to_portuguese(transcript)
+            transcript = claude.translate_to_portuguese(transcript, track_user_id=user_id)
 
         _jobs[job_id] = {"status": "formatting", "_ts": time.time()}
         # SEM IA: split por pontuação (mesma lógica do organic) + body paragrafado
@@ -107,14 +109,16 @@ def _run_ad_pipeline_adult(job_id: str, file_path: str, filename: str, user_id: 
 def _run_ad_pipeline(job_id: str, file_path: str, filename: str, user_id: str, project_id: str | None, niche: str | None, reverse_engineer: bool = False, translate: bool = False):
     try:
         _jobs[job_id] = {"status": "analyzing", "_ts": time.time()}
-        result = gemini.analyze_ad(file_path)
+        result = gemini.analyze_ad(
+            file_path, track_user_id=user_id, operation="analise_anuncio", track_project_id=project_id,
+        )
 
         if translate:
             _jobs[job_id] = {"status": "translating", "_ts": time.time()}
-            result["hook_written"]   = claude.translate_to_portuguese(result.get("hook_written", ""))
-            result["landing_phrase"] = claude.translate_to_portuguese(result.get("landing_phrase", ""))
-            result["body"]           = claude.translate_to_portuguese(result.get("body", ""))
-            result["hook_visual"]    = claude.translate_to_portuguese(result.get("hook_visual", ""))
+            result["hook_written"]   = claude.translate_to_portuguese(result.get("hook_written", ""), track_user_id=user_id)
+            result["landing_phrase"] = claude.translate_to_portuguese(result.get("landing_phrase", ""), track_user_id=user_id)
+            result["body"]           = claude.translate_to_portuguese(result.get("body", ""), track_user_id=user_id)
+            result["hook_visual"]    = claude.translate_to_portuguese(result.get("hook_visual", ""), track_user_id=user_id)
 
         # Formata o body em parágrafos de 1-2 frases (Gemini retorna texto corrido)
         if result.get("body"):

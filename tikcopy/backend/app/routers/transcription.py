@@ -25,13 +25,13 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
         audio_path, title, metrics = ytdlp.download_audio(url, job_id)
 
         _jobs[job_id] = {"status": "transcribing"}
-        transcript = assemblyai.transcribe_file(audio_path)
+        transcript = assemblyai.transcribe_file(audio_path, track_user_id=user_id, operation="transcricao_organico", track_project_id=project_id)
         if not transcript:
             raise ValueError("Transcrição retornou vazia.")
 
         if translate:
             _jobs[job_id] = {"status": "translating"}
-            transcript = claude.translate_to_portuguese(transcript)
+            transcript = claude.translate_to_portuguese(transcript, track_user_id=user_id)
 
         # Split hook + body SEM IA (só por pontuação) + transcript paragrafado completo
         split = claude.split_hook_body(transcript)
@@ -83,13 +83,13 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
 def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: str, project_id: str | None, niche: str | None, lesson: bool, translate: bool = False):
     try:
         _jobs[job_id] = {"status": "transcribing"}
-        transcript = assemblyai.transcribe_file(file_path)
+        transcript = assemblyai.transcribe_file(file_path, track_user_id=user_id, operation="transcricao_organico", track_project_id=project_id)
         if not transcript:
             raise ValueError("Transcrição retornou vazia.")
 
         if translate:
             _jobs[job_id] = {"status": "translating"}
-            transcript = claude.translate_to_portuguese(transcript)
+            transcript = claude.translate_to_portuguese(transcript, track_user_id=user_id)
 
         # Sem IA: só paragrafa o transcript pra leitura + split hook/body por pontuação
         transcript_paragraphed = claude._break_into_paragraphs(transcript) if not lesson else transcript

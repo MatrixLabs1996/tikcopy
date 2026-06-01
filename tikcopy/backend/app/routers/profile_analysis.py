@@ -89,7 +89,7 @@ def _run_profile_pipeline(job_id: str, url: str, top_n: int, niche: str | None, 
             try:
                 tmp_id = f"{job_id}-{idx}"
                 audio_path, title, metrics = ytdlp.download_audio(v["url"], tmp_id)
-                transcript = assemblyai.transcribe_file(audio_path)
+                transcript = assemblyai.transcribe_file(audio_path, track_user_id=user_id, operation="raiox_transcricao")
                 try:
                     Path(audio_path).unlink()
                 except OSError:
@@ -97,7 +97,7 @@ def _run_profile_pipeline(job_id: str, url: str, top_n: int, niche: str | None, 
                 if not transcript:
                     continue
                 if translate:
-                    transcript = claude.translate_to_portuguese(transcript)
+                    transcript = claude.translate_to_portuguese(transcript, track_user_id=user_id)
                 transcript_paragraphed = claude._break_into_paragraphs(transcript)
                 split = claude.split_hook_body(transcript)
                 if not author:

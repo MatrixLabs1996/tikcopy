@@ -46,7 +46,7 @@ def _classify_and_merge(content_dict: dict, sb=None, user_id: str | None = None)
         return content_dict
     try:
         existing = _get_user_custom_hook_types(sb, user_id) if (sb and user_id) else []
-        result = claude.classify_hook(hook, existing_custom_types=existing)
+        result = claude.classify_hook(hook, existing_custom_types=existing, track_user_id=user_id)
         if result.get("hook_type"):
             content_dict["hook_type"] = result["hook_type"]
         if result.get("emotion"):

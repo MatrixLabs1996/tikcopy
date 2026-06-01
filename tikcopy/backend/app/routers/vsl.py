@@ -20,13 +20,13 @@ _jobs: dict = {}
 def _run_vsl_pipeline(job_id: str, file_path: str, filename: str, user_id: str, project_id: str | None, niche: str | None = None, translate: bool = False):
     try:
         _jobs[job_id] = {"status": "transcribing"}
-        transcript = assemblyai.transcribe_file(file_path)
+        transcript = assemblyai.transcribe_file(file_path, track_user_id=user_id, operation="transcricao_vsl", track_project_id=project_id)
         if not transcript:
             raise ValueError("Transcrição retornou vazia.")
 
         if translate:
             _jobs[job_id] = {"status": "translating"}
-            transcript = claude.translate_to_portuguese(transcript)
+            transcript = claude.translate_to_portuguese(transcript, track_user_id=user_id)
 
         _jobs[job_id] = {"status": "analyzing"}
         analysis = claude.analyze_vsl_rmbc(transcript)

@@ -259,7 +259,7 @@ def _run_distill(
         transcript_text = (vsl_transcript or "").strip()
         if not transcript_text and vsl_path:
             _dossier_jobs[job_id] = {"status": "transcribing", "_ts": time.time()}
-            transcript_text = assemblyai.transcribe_file(vsl_path) or ""
+            transcript_text = assemblyai.transcribe_file(vsl_path, track_user_id=user_id, operation="transcricao_vsl", track_project_id=project_id) or ""
 
         if not research_text.strip() and not transcript_text.strip():
             raise ValueError("Nenhum conteúdo encontrado nas pesquisas ou VSL enviadas.")
