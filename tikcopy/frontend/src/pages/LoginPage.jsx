@@ -125,32 +125,6 @@ export default function LoginPage() {
             Criar conta
           </Link>
         </div>
-
-        {/* Dev: modo demo sem Supabase */}
-        <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-subtle)', paddingTop: '20px', textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px' }}>
-            Sem Supabase configurado?
-          </div>
-          <button
-            onClick={() => {
-              setUser({ id: 'demo', email: 'demo@copyx.com', user_metadata: { name: 'Demo User' } })
-              navigate('/')
-            }}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--border-strong)',
-              borderRadius: '7px',
-              padding: '8px 20px',
-              fontSize: '12px',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              fontFamily: 'var(--font)',
-              width: '100%',
-            }}
-          >
-            Entrar em modo demo
-          </button>
-        </div>
       </div>
     </div>
   )
