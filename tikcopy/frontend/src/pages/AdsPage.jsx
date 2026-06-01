@@ -152,24 +152,7 @@ function AdResult({ result, niche, projectId, videoFile }) {
           ))}
         </div>
       </div>
-      {/* ── 1. HOOK ESCRITO (primeiro lugar) ── */}
-      <div>
-        <div className="tc-section-title">Hook</div>
-        <div className="tc-hook-box" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>{hook_written}</div>
-      </div>
-
-      {/* ── 2. BODY (com parágrafos quebrados) ── */}
-      <div>
-        <div className="tc-section-title">Body</div>
-        <div className="tc-result-box" style={{
-          whiteSpace: 'pre-wrap',
-          lineHeight: 1.75,
-          fontSize: '13px',
-          padding: '16px 18px',
-        }}>{body}</div>
-      </div>
-
-      {/* ── 4. INFO VISUAL (recolhido — informação secundária) ── */}
+      {/* ── HOOK VISUAL + detalhes (recolhido) — acima do Hook escrito ── */}
       {(hook_visual && hook_visual !== '(análise visual não disponível para conteúdo 18+)') && (
         <details style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
           <summary style={{ fontSize: '11px', color: 'var(--text-muted)', cursor: 'pointer', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500 }}>
@@ -180,6 +163,23 @@ function AdResult({ result, niche, projectId, videoFile }) {
           </div>
         </details>
       )}
+
+      {/* ── HOOK ESCRITO ── */}
+      <div>
+        <div className="tc-section-title">Hook</div>
+        <div className="tc-hook-box" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>{hook_written}</div>
+      </div>
+
+      {/* ── BODY (com parágrafos quebrados) ── */}
+      <div>
+        <div className="tc-section-title">Body</div>
+        <div className="tc-result-box" style={{
+          whiteSpace: 'pre-wrap',
+          lineHeight: 1.75,
+          fontSize: '13px',
+          padding: '16px 18px',
+        }}>{body}</div>
+      </div>
       {result.reverse_engineering && (
         <div style={{ border: '1px solid var(--border-default)', borderLeft: '3px solid #8b5cf6', borderRadius: '8px', overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(139,92,246,0.06)', borderBottom: '1px solid var(--border-default)' }}>
