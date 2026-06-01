@@ -1333,12 +1333,9 @@ export default function CopyEditorPage() {
           try { return typeof swipe.content === 'string' ? JSON.parse(swipe.content) : swipe.content }
           catch { return { raw: swipe.content } }
         })()
-        // Pra ad/swipe-de-anúncio, body já vem formatado (do DraftsPage com ## HOOKS / ## BODY)
-        // Pra orgânico, monta o markdown com hook + body
-        const isOrganic = swipe.tag !== 'ad' && swipe.tag !== 'hook'
-        const formattedContent = isOrganic
-          ? buildSwipeOrganicMarkdown(content)
-          : (content.body || content.hook_written || content.hook || swipe.content)
+        // Monta o markdown com Hook + Body pra qualquer tipo (ad, hook, orgânico).
+        // buildSwipeOrganicMarkdown já trata cada caso: hook+body, só hook, ou só body.
+        const formattedContent = buildSwipeOrganicMarkdown(content) || content.body || content.hook_written || content.hook || swipe.content
         const virtual = {
           id: `swipe-${swipe.id}`,
           type: swipe.tag === 'ad' ? 'transcript_ad' : swipe.tag === 'hook' ? 'hook' : 'transcript_organic',
