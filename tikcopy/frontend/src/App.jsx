@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { supabase } from './services/supabase'
 import useAppStore from './stores/useAppStore'
 
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './components/AppLayout'
+import RequireRealProject from './components/RequireRealProject'
 
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -21,26 +22,41 @@ import ResearchesPage from './pages/ResearchesPage'
 import HistoryPage from './pages/HistoryPage'
 import SettingsPage from './pages/SettingsPage'
 import ProjectsPage from './pages/ProjectsPage'
+import ProjectCreatePage from './pages/ProjectCreatePage'
+import CopyEditorPage from './pages/CopyEditorPage'
+import SwipePage from './pages/SwipePage'
+import VSLPage from './pages/VSLPage'
+import ProfileAnalysisPage from './pages/ProfileAnalysisPage'
+import AdminPage from './pages/AdminPage'
+import BriefingViewerPage from './pages/BriefingViewerPage'
 
 export default function App() {
-  const { setUser, setSession, clearAuth } = useAppStore()
+  const { setUser, setSession, clearAuth, setAuthReady } = useAppStore()
+  const navigate = useNavigate()
 
   useEffect(() => {
-    // Restore session on load
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setUser(data.session.user)
-        setSession(data.session)
-      }
-    })
-
-    // Listen to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // getSession() is the single source of truth for initial load.
+    // It resolves only after Supabase has validated (or refreshed) the stored token,
+    // so authReady is guaranteed to reflect the real auth state.
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user)
         setSession(session)
-      } else {
+      }
+      setAuthReady(true)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setUser(session.user)
+        setSession(session)
+      } else if (event === 'SIGNED_OUT') {
         clearAuth()
+      }
+
+      if (['SIGNED_IN', 'TOKEN_REFRESHED'].includes(event) &&
+          (window.location.pathname === '/login' || window.location.pathname === '/register')) {
+        navigate('/', { replace: true })
       }
     })
 
@@ -72,15 +88,25 @@ export default function App() {
           <Route path="/organic" element={<OrganicPage />} />
           <Route path="/lessons" element={<LessonsPage />} />
           <Route path="/ads" element={<AdsPage />} />
-          <Route path="/copy-zone" element={<CopyZonePage />} />
+          <Route path="/copy-zone" element={<RequireRealProject pageName="a Inteligência"><CopyZonePage /></RequireRealProject>} />
           <Route path="/templates" element={<TemplatesPage />} />
-          <Route path="/drafts" element={<DraftsPage />} />
-          <Route path="/briefings" element={<BriefingsPage />} />
-          <Route path="/researches" element={<ResearchesPage />} />
+          <Route path="/drafts" element={<RequireRealProject pageName="Minhas Copys"><DraftsPage /></RequireRealProject>} />
+          <Route path="/briefings" element={<RequireRealProject pageName="Projeto"><BriefingsPage /></RequireRealProject>} />
+          <Route path="/researches" element={<RequireRealProject pageName="Pesquisas"><ResearchesPage /></RequireRealProject>} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/new" element={<ProjectCreatePage />} />
+          <Route path="/criar-copy" element={<RequireRealProject pageName="Escrever"><CopyEditorPage /></RequireRealProject>} />
+          <Route path="/swipe" element={<SwipePage />} />
+          <Route path="/raio-x" element={<ProfileAnalysisPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/vsl" element={<VSLPage />} />
         </Route>
+
+        {/* Viewer standalone (sem sidebar) pra abrir docs em aba dedicada */}
+        <Route path="/briefings/:id/view" element={<ProtectedRoute><BriefingViewerPage /></ProtectedRoute>} />
+        <Route path="/research-docs/:id/view" element={<ProtectedRoute><BriefingViewerPage /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

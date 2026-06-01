@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Check, FolderOpen } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import useAppStore from '../stores/useAppStore'
+import NicheSelect from '../components/NicheSelect'
 
 function ProjectForm({ initial, onSave, onCancel }) {
   const [name, setName] = useState(initial?.name || '')
@@ -47,12 +49,7 @@ function ProjectForm({ initial, onSave, onCancel }) {
       </div>
       <div>
         <label className="tc-label">Nicho</label>
-        <input
-          className="tc-input"
-          placeholder="Ex: Educação, Saúde, Finanças..."
-          value={nicho}
-          onChange={(e) => setNicho(e.target.value)}
-        />
+        <NicheSelect value={nicho} onChange={setNicho} />
       </div>
       <div>
         <label className="tc-label">Descrição</label>
@@ -85,6 +82,7 @@ function ProjectForm({ initial, onSave, onCancel }) {
 
 function ProjectCard({ project, isActive, onActivate, onEdit, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const isDefault = (project.name || '').trim().toLowerCase() === 'geral'
 
   return (
     <div style={{
@@ -95,16 +93,27 @@ function ProjectCard({ project, isActive, onActivate, onEdit, onDelete }) {
       position: 'relative',
       transition: 'border-color 0.15s',
     }}>
-      {isActive && (
-        <div style={{
-          position: 'absolute', top: '12px', right: '12px',
-          background: 'var(--accent)', borderRadius: '999px',
-          padding: '2px 8px', fontSize: '10px', fontWeight: 600,
-          color: '#fff', letterSpacing: '0.04em',
-        }}>
-          ATIVO
-        </div>
-      )}
+      <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}>
+        {isDefault && (
+          <div style={{
+            background: 'var(--bg-active)', borderRadius: '999px',
+            padding: '2px 8px', fontSize: '10px', fontWeight: 600,
+            color: 'var(--text-secondary)', letterSpacing: '0.04em',
+            border: '1px solid var(--border-default)',
+          }}>
+            PADRÃO
+          </div>
+        )}
+        {isActive && (
+          <div style={{
+            background: 'var(--accent)', borderRadius: '999px',
+            padding: '2px 8px', fontSize: '10px', fontWeight: 600,
+            color: '#fff', letterSpacing: '0.04em',
+          }}>
+            ATIVO
+          </div>
+        )}
+      </div>
 
       <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', paddingRight: isActive ? '60px' : '0' }}>
         {project.name}
@@ -144,18 +153,20 @@ function ProjectCard({ project, isActive, onActivate, onEdit, onDelete }) {
             <Check size={12} /> Ativar
           </button>
         )}
-        <button
-          onClick={() => onEdit(project)}
-          style={{
-            padding: '6px 10px', borderRadius: '6px', fontSize: '12px',
-            background: 'transparent', border: '1px solid var(--border-default)',
-            color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)',
-            display: 'flex', alignItems: 'center', gap: '5px',
-          }}
-        >
-          <Pencil size={11} /> Editar
-        </button>
-        {confirmDelete ? (
+        {!isDefault && (
+          <button
+            onClick={() => onEdit(project)}
+            style={{
+              padding: '6px 10px', borderRadius: '6px', fontSize: '12px',
+              background: 'transparent', border: '1px solid var(--border-default)',
+              color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)',
+              display: 'flex', alignItems: 'center', gap: '5px',
+            }}
+          >
+            <Pencil size={11} /> Editar
+          </button>
+        )}
+        {isDefault ? null : confirmDelete ? (
           <>
             <button
               onClick={() => onDelete(project.id)}
@@ -198,6 +209,7 @@ function ProjectCard({ project, isActive, onActivate, onEdit, onDelete }) {
 const isDemo = (user) => user?.id === 'demo'
 
 export default function ProjectsPage() {
+  const navigate = useNavigate()
   const { activeProject, setActiveProject, user } = useAppStore()
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
@@ -219,24 +231,6 @@ export default function ProjectsPage() {
   }
 
   useEffect(() => { fetchProjects() }, [])
-
-  const handleCreate = async (data) => {
-    if (demo) {
-      const newProject = { id: crypto.randomUUID(), ...data, created_at: new Date().toISOString() }
-      setProjects((prev) => [newProject, ...prev])
-      setShowForm(false)
-      toast.success('Projeto criado!')
-      return
-    }
-    try {
-      const res = await api.post('/projects', data)
-      setProjects((prev) => [res.data, ...prev])
-      setShowForm(false)
-      toast.success('Projeto criado!')
-    } catch {
-      toast.error('Erro ao criar projeto')
-    }
-  }
 
   const handleEdit = async (data) => {
     if (demo) {
@@ -286,9 +280,9 @@ export default function ProjectsPage() {
             Organize suas transcrições e copies por produto ou cliente.
           </p>
         </div>
-        {!showForm && !editingProject && (
+        {!editingProject && (
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => navigate('/projects/new')}
             className="tc-btn-primary"
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
@@ -297,11 +291,11 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      {(showForm || editingProject) && (
+      {editingProject && (
         <div style={{ marginBottom: '20px', maxWidth: '480px' }}>
           <ProjectForm
             initial={editingProject}
-            onSave={editingProject ? handleEdit : handleCreate}
+            onSave={handleEdit}
             onCancel={() => { setShowForm(false); setEditingProject(null) }}
           />
         </div>
@@ -317,7 +311,14 @@ export default function ProjectsPage() {
         }}>
           <FolderOpen size={32} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
           <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '6px' }}>Nenhum projeto ainda</div>
-          <div style={{ fontSize: '12px' }}>Crie um projeto para organizar suas transcrições e copies.</div>
+          <div style={{ fontSize: '12px', marginBottom: '16px' }}>Crie o primeiro pra a IA conhecer o produto.</div>
+          <button
+            onClick={() => navigate('/projects/new')}
+            className="tc-btn-primary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={14} /> Novo projeto
+          </button>
         </div>
       ) : (
         <div style={{

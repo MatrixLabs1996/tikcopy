@@ -1,8 +1,11 @@
 import axios from 'axios'
 import { supabase } from './supabase'
 
+// Fallback no 8010 (porta do backend local). A 8000 era um default antigo e
+// não é usada — apontar pra ela quebrava o carregamento quando o VITE_API_URL
+// não era lido pelo dev server.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8010',
 })
 
 // Inject Supabase JWT on every request

@@ -7,8 +7,10 @@ const useAppStore = create(
       // ── Auth ────────────────────────────────────────────────
       user: null,
       session: null,
+      authReady: false,
       setUser: (user) => set({ user }),
       setSession: (session) => set({ session }),
+      setAuthReady: (v) => set({ authReady: v }),
       clearAuth: () => set({ user: null, session: null }),
 
       // ── Active project ──────────────────────────────────────
@@ -36,7 +38,7 @@ const useAppStore = create(
     }),
     {
       name: 'tikcopy-store',
-      partialize: (s) => ({ theme: s.theme, activeProject: s.activeProject }),
+      partialize: (s) => ({ theme: s.theme, activeProject: s.activeProject, user: s.user, session: s.session }),
     }
   )
 )

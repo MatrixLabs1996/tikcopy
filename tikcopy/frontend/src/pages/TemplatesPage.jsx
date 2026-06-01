@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Trash2, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { confirmAction } from '../stores/useConfirmStore'
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState([])
@@ -40,7 +41,7 @@ export default function TemplatesPage() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Deletar template?')) return
+    if (!(await confirmAction({ title: 'Deletar template?', confirmLabel: 'Deletar' }))) return
     await api.delete(`/templates/${id}`)
     setTemplates((prev) => prev.filter((t) => t.id !== id))
   }

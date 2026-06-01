@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { confirmAction } from '../stores/useConfirmStore'
 
 const TYPE_LABEL = { organic: 'Orgânico', lesson: 'Aula', ad: 'Anúncio' }
 const TYPE_COLOR = { organic: 'var(--accent)', lesson: '#4a9eff', ad: '#f59e0b' }
@@ -18,7 +19,7 @@ export default function HistoryPage() {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation()
-    if (!confirm('Deletar esta transcrição?')) return
+    if (!(await confirmAction({ title: 'Deletar esta transcrição?', confirmLabel: 'Deletar' }))) return
     await api.delete(`/transcribe/${id}`)
     setItems((prev) => prev.filter((i) => i.id !== id))
   }

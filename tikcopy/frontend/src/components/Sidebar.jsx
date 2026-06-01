@@ -1,16 +1,25 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Video, GraduationCap, Megaphone, MessageSquare,
-  LayoutTemplate, FileText, BookOpen, Search, Clock,
-  Settings, LogOut, Sun, Moon, FolderOpen, ChevronRight,
+  PenLine, FileText, BookOpen, Search, Clock,
+  Settings, LogOut, Sun, Moon, FolderOpen, ChevronRight, Layers, TvMinimalPlay, Radar,
 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { BarChart3 } from 'lucide-react'
 import useAppStore from '../stores/useAppStore'
 import { supabase } from '../services/supabase'
+import { guardedNavigate } from '../stores/editorNavGuard'
+import api from '../services/api'
 
 function NavItem({ to, icon: Icon, label }) {
+  const navigate = useNavigate()
   return (
     <NavLink
       to={to}
+      onClick={(e) => {
+        e.preventDefault()
+        guardedNavigate(navigate, to)
+      }}
       style={({ isActive }) => ({
         display: 'flex',
         alignItems: 'center',
@@ -51,6 +60,11 @@ function SectionLabel({ label }) {
 export default function Sidebar() {
   const { user, theme, toggleTheme, clearAuth, activeProject } = useAppStore()
   const navigate = useNavigate()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    api.get('/admin/me').then(r => setIsAdmin(!!r.data.is_admin)).catch(() => setIsAdmin(false))
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -66,88 +80,82 @@ export default function Sidebar() {
       borderRight: '1px solid var(--border-subtle)',
       display: 'flex',
       flexDirection: 'column',
-      padding: '16px 12px',
       height: '100vh',
       position: 'fixed',
       left: 0,
       top: 0,
-      overflowY: 'auto',
     }}>
-      {/* Brand */}
-      <NavLink to="/" style={{ textDecoration: 'none' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '9px',
-          paddingBottom: '16px',
-          borderBottom: '1px solid var(--border-subtle)',
-          marginBottom: '14px',
-        }}>
+      {/* ── Topo fixo: brand + projeto ── */}
+      <div style={{ flexShrink: 0, padding: '14px 12px 0' }}>
+        <NavLink to="/" style={{ textDecoration: 'none' }}>
           <div style={{
-            width: '28px', height: '28px',
-            background: '#fff',
-            borderRadius: '7px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '13px', fontWeight: 800, color: 'var(--accent)',
-            flexShrink: 0, letterSpacing: '-1px',
-          }}>TC</div>
-          <span style={{ fontSize: '15px', fontWeight: 600, letterSpacing: '-0.3px', color: 'var(--text-primary)' }}>
-            Tik<span style={{ color: 'var(--accent)' }}>Copy</span>
-          </span>
-        </div>
-      </NavLink>
-
-      {/* Active project widget */}
-      <NavLink to="/projects" style={{ textDecoration: 'none', marginBottom: '10px', display: 'block' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '8px 10px', borderRadius: '7px',
-          background: activeProject ? 'rgba(255,62,94,0.06)' : 'var(--bg-elevated)',
-          border: `1px solid ${activeProject ? 'rgba(255,62,94,0.2)' : 'var(--border-default)'}`,
-          cursor: 'pointer', transition: 'all 0.12s',
-        }}>
-          <FolderOpen size={13} color={activeProject ? 'var(--accent)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '1px' }}>Projeto ativo</div>
-            <div style={{
-              fontSize: '12px', fontWeight: 500,
-              color: activeProject ? 'var(--text-primary)' : 'var(--text-muted)',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {activeProject ? activeProject.name : 'Nenhum selecionado'}
-            </div>
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingBottom: '10px',
+            borderBottom: '1px solid var(--border-subtle)',
+            marginBottom: '12px',
+          }}>
+            <img
+              src={theme === 'dark' ? '/logo-dark.png' : '/logo.png'}
+              alt="CopyX"
+              style={{ width: '50%', height: 'auto', display: 'block', maxHeight: '40px', objectFit: 'contain' }}
+            />
           </div>
-          <ChevronRight size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-        </div>
-      </NavLink>
+        </NavLink>
 
-      {/* Nav */}
-      <SectionLabel label="Transcrever" />
-      <NavItem to="/organic" icon={Video} label="Vídeos Orgânicos" />
-      <NavItem to="/lessons" icon={GraduationCap} label="Podcasts & Aulas" />
-      <NavItem to="/ads" icon={Megaphone} label="Anúncios" />
+        <NavLink to="/projects" style={{ textDecoration: 'none', marginBottom: '10px', display: 'block' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '8px 10px', borderRadius: '7px',
+            background: activeProject ? 'rgba(255,62,94,0.06)' : 'var(--bg-elevated)',
+            border: `1px solid ${activeProject ? 'rgba(255,62,94,0.2)' : 'var(--border-default)'}`,
+            cursor: 'pointer', transition: 'all 0.12s',
+          }}>
+            <FolderOpen size={13} color={activeProject ? 'var(--accent)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '1px' }}>Projeto ativo</div>
+              <div style={{
+                fontSize: '12px', fontWeight: 500,
+                color: activeProject ? 'var(--text-primary)' : 'var(--text-muted)',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {activeProject ? activeProject.name : 'Nenhum selecionado'}
+              </div>
+            </div>
+            <ChevronRight size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+          </div>
+        </NavLink>
+      </div>
 
-      <SectionLabel label="Copy" />
-      <NavItem to="/copy-zone" icon={MessageSquare} label="Zona de Copy" />
-      <NavItem to="/templates" icon={LayoutTemplate} label="Templates" />
-      <NavItem to="/drafts" icon={FileText} label="Rascunhos" />
+      {/* ── Meio scrollável: nav ── */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px' }}>
+        <SectionLabel label="Transcrever" />
+        <NavItem to="/organic" icon={Video} label="Vídeos Orgânicos" />
+        <NavItem to="/lessons" icon={GraduationCap} label="Podcasts & Aulas" />
+        <NavItem to="/ads" icon={Megaphone} label="Anúncios" />
+        <NavItem to="/vsl" icon={TvMinimalPlay} label="VSL" />
+        <NavItem to="/raio-x" icon={Radar} label="Raio-X de Perfil" />
 
-      <SectionLabel label="Pesquisa" />
-      <NavItem to="/briefings" icon={BookOpen} label="Briefings" />
-      <NavItem to="/researches" icon={Search} label="Pesquisas" />
+        <SectionLabel label="Copy" />
+        <NavItem to="/copy-zone" icon={MessageSquare} label="Inteligência" />
+        <NavItem to="/criar-copy" icon={PenLine} label="Escrever" />
+        <NavItem to="/swipe" icon={Layers} label="Swipe File" />
+        <NavItem to="/drafts" icon={FileText} label="Minhas Copys" />
 
-      <SectionLabel label="Histórico" />
-      <NavItem to="/history" icon={Clock} label="Recentes" />
+        <SectionLabel label="Pesquisa" />
+        <NavItem to="/briefings" icon={BookOpen} label="Projeto" />
+        <NavItem to="/researches" icon={Search} label="Pesquisas" />
 
-      <SectionLabel label="Projetos" />
-      <NavItem to="/projects" icon={FolderOpen} label="Meus Projetos" />
+        <SectionLabel label="Histórico" />
+        <NavItem to="/history" icon={Clock} label="Recentes" />
 
-      {/* Spacer */}
-      <div style={{ flex: 1 }} />
+        <SectionLabel label="Projetos" />
+        <NavItem to="/projects" icon={FolderOpen} label="Meus Projetos" />
+      </div>
 
-      {/* Bottom */}
-      <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
-        {/* User info */}
+      {/* ── Rodapé fixo: user + logout + tema ── */}
+      <div style={{ flexShrink: 0, borderTop: '1px solid var(--border-subtle)', padding: '12px 12px 16px' }}>
         <div style={{ marginBottom: '8px' }}>
           <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '2px' }}>
             {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
@@ -155,7 +163,7 @@ export default function Sidebar() {
           <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{user?.email}</div>
         </div>
 
-        {/* Settings + Logout */}
+        {isAdmin && <NavItem to="/admin" icon={BarChart3} label="Custo & Uso (admin)" />}
         <NavItem to="/settings" icon={Settings} label="Configurações" />
         <button onClick={handleLogout} style={{
           display: 'flex', alignItems: 'center', gap: '8px',
@@ -167,7 +175,6 @@ export default function Sidebar() {
           <LogOut size={14} /> Sair
         </button>
 
-        {/* Theme toggle */}
         <button onClick={toggleTheme} style={{
           display: 'flex', alignItems: 'center', gap: '8px',
           width: '100%', padding: '7px 8px', borderRadius: '6px',

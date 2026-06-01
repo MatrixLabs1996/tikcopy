@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, HTTPException, Depends
 
 from app.models.schemas import DraftCreate, DraftUpdate, SuggestFieldRequest
@@ -8,17 +9,51 @@ from app.services.supabase_client import get_supabase
 router = APIRouter()
 
 
+def _strip_html(html: str) -> str:
+    if not html:
+        return ""
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html)).strip()
+
+
+def _make_lite_fields_data(fd: dict) -> dict:
+    """Reduz fields_data a apenas o que a lista precisa pra mostrar — sem HTML pesado.
+    Mantém: status, ads_number, hooks (texto puro só), comments count, body preview."""
+    if not isinstance(fd, dict):
+        return {}
+    body_preview = _strip_html(fd.get("content") or fd.get("hook") or fd.get("body") or "")[:200]
+    hooks = fd.get("hooks") or []
+    rating = fd.get("rating") or {}
+    return {
+        "status": fd.get("status"),
+        "ads_number": fd.get("ads_number"),
+        "angle": fd.get("angle"),
+        "format": fd.get("format"),
+        "body_preview": body_preview,
+        "hooks_count": len(hooks),
+        "comments_count": len(fd.get("comments") or []),
+        # Hooks só como texto puro (curto, pra preview/rating)
+        "hooks": [_strip_html(h)[:120] for h in hooks],
+        "rating": rating,  # ratings são pequenos, mantém
+    }
+
+
 @router.get("")
 async def list_drafts(current_user=Depends(get_current_user)):
+    """Lista 'lite' — só com o necessário pra renderizar a página Meus Anúncios.
+    HTML pesado (body completo, hooks com markup) é carregado sob demanda em GET /drafts/{id}."""
     sb = get_supabase()
     res = (
         sb.table("copy_drafts")
-        .select("id, title, project_id, template_id, updated_at, created_at")
+        .select("id, title, project_id, template_id, fields_data, updated_at, created_at")
         .eq("user_id", current_user.id)
         .order("updated_at", desc=True)
         .execute()
     )
-    return res.data or []
+    rows = res.data or []
+    # Reduz fields_data pra cada draft (preserva o que a UI usa, descarta HTML)
+    for r in rows:
+        r["fields_data"] = _make_lite_fields_data(r.get("fields_data") or {})
+    return rows
 
 
 @router.post("")
@@ -52,6 +87,24 @@ async def update_draft(draft_id: str, body: DraftUpdate, current_user=Depends(ge
     update_data = body.model_dump(exclude_none=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
+
+    # MERGE em fields_data ao invés de substituir tudo — protege contra clientes
+    # que mandam só um sub-campo (ex: { rating: {...} }) sem perder body/hooks/comments.
+    if "fields_data" in update_data and isinstance(update_data["fields_data"], dict):
+        current = (
+            sb.table("copy_drafts")
+            .select("fields_data")
+            .eq("id", draft_id)
+            .eq("user_id", current_user.id)
+            .single()
+            .execute()
+        )
+        if current.data:
+            existing_fd = current.data.get("fields_data") or {}
+            if isinstance(existing_fd, dict):
+                merged = {**existing_fd, **update_data["fields_data"]}
+                update_data["fields_data"] = merged
+
     res = (
         sb.table("copy_drafts")
         .update(update_data)

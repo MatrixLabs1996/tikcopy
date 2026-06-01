@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from supabase import create_client
 
 from app.models.schemas import RegisterRequest, LoginRequest, ProfileUpdate
@@ -63,3 +63,20 @@ async def update_me(body: ProfileUpdate, current_user=Depends(get_current_user))
         raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
     res = sb.table("profiles").update(update_data).eq("id", current_user.id).execute()
     return res.data[0] if res.data else {}
+
+
+# ─── Instruções universais (valem pra TODOS os projetos do usuário) ──────────
+
+@router.get("/me/universal-instructions")
+async def get_universal_instructions(current_user=Depends(get_current_user)):
+    sb = get_supabase()
+    res = sb.table("profiles").select("universal_instructions").eq("id", current_user.id).single().execute()
+    return {"instructions": (res.data or {}).get("universal_instructions") or ""}
+
+
+@router.put("/me/universal-instructions")
+async def update_universal_instructions(body: dict = Body(...), current_user=Depends(get_current_user)):
+    sb = get_supabase()
+    text = (body.get("instructions") or "").strip()
+    sb.table("profiles").update({"universal_instructions": text or None}).eq("id", current_user.id).execute()
+    return {"ok": True, "instructions": text}

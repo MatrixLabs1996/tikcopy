@@ -1,5 +1,5 @@
+import time
 import uuid
-import asyncio
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, BackgroundTasks
 from typing import Optional
@@ -7,18 +7,19 @@ from typing import Optional
 from app.models.schemas import TranscribeUrlRequest
 from app.middleware.auth import get_current_user
 from app.services import ytdlp, assemblyai, claude
-from app.services.supabase_client import get_supabase, save_transcription
+from app.services.supabase_client import get_supabase, save_transcription, save_transcript_to_memory
+from app.utils.jobs import cleanup_jobs
 
 router = APIRouter()
 
-TEMP_DIR = Path("/tmp/tikcopy")
+TEMP_DIR = Path(__file__).parent.parent.parent / "temp"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
-# In-memory job store (replace with Redis in production)
+# In-memory job store (limpo via TTL — ver app/utils/jobs.py)
 _jobs: dict = {}
 
 
-def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | None, niche: str | None):
+def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | None, niche: str | None, translate: bool = False):
     try:
         _jobs[job_id] = {"status": "downloading"}
         audio_path, title, metrics = ytdlp.download_audio(url, job_id)
@@ -28,8 +29,13 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
         if not transcript:
             raise ValueError("Transcrição retornou vazia.")
 
-        _jobs[job_id] = {"status": "formatting"}
-        formatted = claude.format_organic(transcript)
+        if translate:
+            _jobs[job_id] = {"status": "translating"}
+            transcript = claude.translate_to_portuguese(transcript)
+
+        # Split hook + body SEM IA (só por pontuação) + transcript paragrafado completo
+        split = claude.split_hook_body(transcript)
+        transcript_paragraphed = claude._break_into_paragraphs(transcript)
 
         _jobs[job_id] = {"status": "saving"}
         record = save_transcription({
@@ -39,12 +45,18 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
             "source_url": url,
             "title": title,
             "niche": niche,
-            "transcript_full": transcript,
-            "hook": formatted["hook"],
-            "landing_phrase": formatted["landing_phrase"],
-            "body": formatted["body"],
+            "transcript_full": transcript_paragraphed,
+            "hook": split["hook"],
+            "body": split["body"],
             "metadata": metrics,
         })
+
+        # Memória do projeto: hook + body em markdown
+        org_content = (
+            f"## Hook\n{split['hook']}\n\n"
+            f"## Body\n{split['body']}"
+        )
+        save_transcript_to_memory(project_id, "transcript_organic", title, org_content, {"source_url": url, "niche": niche})
 
         try:
             Path(audio_path).unlink()
@@ -53,26 +65,35 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
 
         _jobs[job_id] = {
             "status": "done",
+            "_ts": time.time(),
             "result": {
                 "id": record.get("id"),
                 "title": title,
-                "hook": formatted["hook"],
-                "landing_phrase": formatted["landing_phrase"],
-                "body": formatted["body"],
-                "transcript_full": transcript,
+                "source_url": url,
+                "hook": split["hook"],
+                "body": split["body"],
+                "transcript_full": transcript_paragraphed,
                 "metadata": metrics,
             },
         }
     except Exception as exc:
-        _jobs[job_id] = {"status": "error", "error": str(exc)}
+        _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": str(exc)}
 
 
-def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: str, project_id: str | None, niche: str | None, lesson: bool):
+def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: str, project_id: str | None, niche: str | None, lesson: bool, translate: bool = False):
     try:
         _jobs[job_id] = {"status": "transcribing"}
         transcript = assemblyai.transcribe_file(file_path)
         if not transcript:
             raise ValueError("Transcrição retornou vazia.")
+
+        if translate:
+            _jobs[job_id] = {"status": "translating"}
+            transcript = claude.translate_to_portuguese(transcript)
+
+        # Sem IA: só paragrafa o transcript pra leitura + split hook/body por pontuação
+        transcript_paragraphed = claude._break_into_paragraphs(transcript) if not lesson else transcript
+        split = claude.split_hook_body(transcript) if not lesson else {"hook": "", "body": ""}
 
         title = Path(filename).stem
         record_data = {
@@ -82,37 +103,33 @@ def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: st
             "source_filename": filename,
             "title": title,
             "niche": niche,
-            "transcript_full": transcript,
+            "transcript_full": transcript_paragraphed,
         }
-
         if not lesson:
-            _jobs[job_id] = {"status": "formatting"}
-            formatted = claude.format_organic(transcript)
-            record_data.update({
-                "hook": formatted["hook"],
-                "landing_phrase": formatted["landing_phrase"],
-                "body": formatted["body"],
-            })
+            record_data["hook"] = split["hook"]
+            record_data["body"] = split["body"]
 
         _jobs[job_id] = {"status": "saving"}
         record = save_transcription(record_data)
+
+        if lesson:
+            save_transcript_to_memory(project_id, "transcript_lesson", title, transcript, {"filename": filename})
+        else:
+            org_content = f"## Hook\n{split['hook']}\n\n## Body\n{split['body']}"
+            save_transcript_to_memory(project_id, "transcript_organic", title, org_content, {"filename": filename, "niche": niche})
 
         try:
             Path(file_path).unlink()
         except OSError:
             pass
 
-        result = {"id": record.get("id"), "title": title, "transcript_full": transcript}
+        result = {"id": record.get("id"), "title": title, "transcript_full": transcript_paragraphed}
         if not lesson:
-            result.update({
-                "hook": record_data.get("hook", ""),
-                "landing_phrase": record_data.get("landing_phrase", ""),
-                "body": record_data.get("body", ""),
-            })
-
-        _jobs[job_id] = {"status": "done", "result": result}
+            result["hook"] = split["hook"]
+            result["body"] = split["body"]
+        _jobs[job_id] = {"status": "done", "_ts": time.time(), "result": result}
     except Exception as exc:
-        _jobs[job_id] = {"status": "error", "error": str(exc)}
+        _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": str(exc)}
 
 
 @router.post("/url")
@@ -122,10 +139,11 @@ async def transcribe_url(
     current_user=Depends(get_current_user),
 ):
     job_id = str(uuid.uuid4())
-    _jobs[job_id] = {"status": "queued"}
+    cleanup_jobs(_jobs)
+    _jobs[job_id] = {"status": "queued", "_ts": time.time()}
     background_tasks.add_task(
         _run_url_pipeline,
-        job_id, body.url, current_user.id, body.project_id, body.niche,
+        job_id, body.url, current_user.id, body.project_id, body.niche, bool(body.translate),
     )
     return {"job_id": job_id}
 
@@ -136,6 +154,7 @@ async def transcribe_upload(
     file: UploadFile = File(...),
     project_id: Optional[str] = Form(None),
     niche: Optional[str] = Form(None),
+    translate: Optional[str] = Form(None),
     current_user=Depends(get_current_user),
 ):
     job_id = str(uuid.uuid4())
@@ -145,10 +164,12 @@ async def transcribe_upload(
     with open(file_path, "wb") as f:
         f.write(content)
 
-    _jobs[job_id] = {"status": "queued"}
+    cleanup_jobs(_jobs)
+    do_translate = translate in ("true", "1", "yes")
+    _jobs[job_id] = {"status": "queued", "_ts": time.time()}
     background_tasks.add_task(
         _run_upload_pipeline,
-        job_id, file_path, file.filename, current_user.id, project_id, niche, False,
+        job_id, file_path, file.filename, current_user.id, project_id, niche, False, do_translate,
     )
     return {"job_id": job_id}
 
@@ -158,6 +179,7 @@ async def transcribe_lesson(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     project_id: Optional[str] = Form(None),
+    translate: Optional[str] = Form(None),
     current_user=Depends(get_current_user),
 ):
     job_id = str(uuid.uuid4())
@@ -167,12 +189,29 @@ async def transcribe_lesson(
     with open(file_path, "wb") as f:
         f.write(content)
 
-    _jobs[job_id] = {"status": "queued"}
+    cleanup_jobs(_jobs)
+    do_translate = translate in ("true", "1", "yes")
+    _jobs[job_id] = {"status": "queued", "_ts": time.time()}
     background_tasks.add_task(
         _run_upload_pipeline,
-        job_id, file_path, file.filename, current_user.id, project_id, None, True,
+        job_id, file_path, file.filename, current_user.id, project_id, None, True, do_translate,
     )
     return {"job_id": job_id}
+
+
+@router.get("/cookies-status")
+async def cookies_status():
+    """Verifica se cookies.txt está configurado pro yt-dlp."""
+    from app.services import ytdlp
+    return {
+        "configured": ytdlp.has_cookies_file(),
+        "path": str(ytdlp.COOKIES_FILE),
+        "instruction": (
+            "Pra TikTok funcionar sem bloqueios: instale a extensão "
+            "'Get cookies.txt LOCALLY' no Brave/Chrome, vá em tiktok.com (logado), "
+            "exporte cookies.txt e salve em " + str(ytdlp.COOKIES_FILE)
+        ) if not ytdlp.has_cookies_file() else "Cookies.txt configurado! 🎉"
+    }
 
 
 @router.get("/status/{job_id}")

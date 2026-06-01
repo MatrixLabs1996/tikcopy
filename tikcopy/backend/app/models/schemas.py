@@ -23,18 +23,20 @@ class ProfileUpdate(BaseModel):
 # ── Projects ──────────────────────────────────────────────────────────────────
 class ProjectCreate(BaseModel):
     name: str
-    niche: Optional[str] = None
+    nicho: Optional[str] = None
     avatar: Optional[str] = None
     tone: Optional[str] = None
     platform: Optional[str] = None
+    instructions: Optional[str] = None
 
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
-    niche: Optional[str] = None
+    nicho: Optional[str] = None
     avatar: Optional[str] = None
     tone: Optional[str] = None
     platform: Optional[str] = None
+    instructions: Optional[str] = None
 
 
 # ── Transcription ─────────────────────────────────────────────────────────────
@@ -42,6 +44,18 @@ class TranscribeUrlRequest(BaseModel):
     url: str
     project_id: Optional[str] = None
     niche: Optional[str] = None
+    translate: Optional[bool] = False
+
+
+class ProfileAnalysisRequest(BaseModel):
+    url: str
+    top_n: int = 5
+    niche: Optional[str] = None
+    theme: Optional[str] = None          # filtro de tema dentro do canal (opcional)
+    rank_by: Optional[str] = "views"     # 'views' (absoluto) | 'relevance' (em alta)
+    video_type: Optional[str] = "both"   # 'both' | 'long' | 'shorts'
+    translate: Optional[bool] = False
+    include_comments: Optional[bool] = True
 
 
 # ── Ads ───────────────────────────────────────────────────────────────────────
@@ -121,34 +135,9 @@ class SuggestFieldRequest(BaseModel):
     context: Optional[dict] = None
 
 
-# ── Briefings ─────────────────────────────────────────────────────────────────
+# ── Briefings (template estruturado da oferta) ───────────────────────────────
+# Os campos seguem o template completo do método Amanda Khayat.
 class BriefingCreate(BaseModel):
-    title: str
-    project_id: Optional[str] = None
-    angle: Optional[str] = None
-    new_idea: Optional[str] = None
-    avatar: Optional[str] = None
-    format: Optional[str] = None
-    headline: bool = False
-    editing_style: Optional[str] = None
-    organic_ref_url: Optional[str] = None
-    organic_transcript: Optional[str] = None
-
-
-class BriefingUpdate(BaseModel):
-    title: Optional[str] = None
-    angle: Optional[str] = None
-    new_idea: Optional[str] = None
-    avatar: Optional[str] = None
-    format: Optional[str] = None
-    headline: Optional[bool] = None
-    editing_style: Optional[str] = None
-    organic_ref_url: Optional[str] = None
-    organic_transcript: Optional[str] = None
-
-
-# ── Researches ────────────────────────────────────────────────────────────────
-class ResearchCreate(BaseModel):
     title: str
     project_id: Optional[str] = None
     market: Optional[str] = None
@@ -163,12 +152,19 @@ class ResearchCreate(BaseModel):
     validated_angles: Optional[list] = None
     validated_formats: Optional[list] = None
     validated_avatars: Optional[list] = None
+    chiclete_names_market: Optional[list] = None
+    rejected_solutions: Optional[list] = None
     main_pains: Optional[list] = None
     main_desires: Optional[list] = None
     slang: Optional[list] = None
+    common_enemy: Optional[list] = None
+    cultural_refs: Optional[Any] = None       # pode ser list ou string (texto longo)
+    organic_hooks: Optional[list] = None
+    organic_structures: Optional[Any] = None  # pode ser list ou texto
+    template_data: Optional[dict] = None      # campos extras do template completo
 
 
-class ResearchUpdate(BaseModel):
+class BriefingUpdate(BaseModel):
     title: Optional[str] = None
     market: Optional[str] = None
     chiclete_name: Optional[str] = None
@@ -178,6 +174,48 @@ class ResearchUpdate(BaseModel):
     vsl_format: Optional[str] = None
     vsl_bullets: Optional[list] = None
     vsl_story: Optional[str] = None
+    validated_angles: Optional[list] = None
+    validated_formats: Optional[list] = None
+    validated_avatars: Optional[list] = None
+    chiclete_names_market: Optional[list] = None
+    rejected_solutions: Optional[list] = None
     main_pains: Optional[list] = None
     main_desires: Optional[list] = None
     slang: Optional[list] = None
+    common_enemy: Optional[list] = None
+    cultural_refs: Optional[Any] = None
+    organic_hooks: Optional[list] = None
+    organic_structures: Optional[Any] = None
+    template_data: Optional[dict] = None
+
+
+# ── Públicos (fatias de público por nicho) ───────────────────────────────────
+class PublicoCreate(BaseModel):
+    nicho: str
+    nome: str
+
+
+class PublicoUpdate(BaseModel):
+    nome: Optional[str] = None
+
+
+# ── Research Docs (biblioteca livre por nicho + público) ─────────────────────
+class ResearchDocCreate(BaseModel):
+    nicho: str
+    publico_id: Optional[str] = None
+    title: str
+    type: str  # 'upload' | 'text' | 'link'
+    content: Optional[str] = None
+    source_url: Optional[str] = None
+    source_platform: Optional[str] = None
+    source_metadata: Optional[dict] = None
+    imported_via: Optional[str] = "web"
+
+
+class ResearchDocUpdate(BaseModel):
+    title: Optional[str] = None
+    publico_id: Optional[str] = None
+    content: Optional[str] = None
+    source_url: Optional[str] = None
+    source_platform: Optional[str] = None
+    source_metadata: Optional[dict] = None

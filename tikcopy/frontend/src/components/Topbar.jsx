@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Plus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import useAppStore from '../stores/useAppStore'
 import api from '../services/api'
 
 export default function Topbar() {
   const { user, activeProject, setActiveProject } = useAppStore()
+  const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [open, setOpen] = useState(false)
 
@@ -28,7 +30,7 @@ export default function Topbar() {
       zIndex: 10,
     }}>
       {/* Project selector */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <button
           onClick={() => setOpen((o) => !o)}
           style={{
@@ -45,7 +47,7 @@ export default function Topbar() {
 
         {open && (
           <div style={{
-            position: 'absolute', top: '110%', left: 0, minWidth: '200px',
+            position: 'absolute', top: '110%', left: 0, minWidth: '210px',
             background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
             borderRadius: '8px', padding: '4px', zIndex: 100, boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
           }}>
@@ -74,9 +76,21 @@ export default function Topbar() {
                 }}
               >
                 {p.name}
-                {p.niche && <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>· {p.niche}</span>}
+                {p.nicho && <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>· {p.nicho}</span>}
               </button>
             ))}
+            <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
+            <button
+              onClick={() => { setOpen(false); navigate('/projects/new') }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px', width: '100%', textAlign: 'left',
+                padding: '7px 10px', fontSize: '12px', color: 'var(--accent)', fontWeight: 500,
+                background: 'transparent', border: 'none', borderRadius: '5px',
+                cursor: 'pointer', fontFamily: 'var(--font)',
+              }}
+            >
+              <Plus size={13} /> Novo projeto
+            </button>
           </div>
         )}
       </div>

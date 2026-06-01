@@ -73,6 +73,16 @@ def analyze_ad(file_path: str) -> dict:
     except Exception:
         pass
 
+    # response.text pode ser None se o Gemini bloqueou ou não gerou texto
+    if not response.text:
+        # Tenta extrair motivo do bloqueio
+        reason = ""
+        try:
+            reason = str(response.prompt_feedback) or str(response.candidates[0].finish_reason)
+        except Exception:
+            pass
+        raise ValueError(f"Gemini não gerou resposta de texto.{' Motivo: ' + reason if reason else ' Possível bloqueio de segurança ou arquivo inválido.'}")
+
     raw = response.text.strip()
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     if not match:

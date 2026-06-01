@@ -1,50 +1,99 @@
 import os
 import time
+import logging
 import requests
+
+logger = logging.getLogger(__name__)
 
 AAI_BASE = "https://api.assemblyai.com/v2"
 
 
+def _key() -> str:
+    key = os.environ.get("ASSEMBLYAI_KEY", "")
+    if not key:
+        raise RuntimeError("ASSEMBLYAI_KEY não encontrado no ambiente")
+    return key
+
+
 def _headers():
-    key = os.environ["ASSEMBLYAI_KEY"]
-    return {"authorization": key, "content-type": "application/json"}
+    return {"authorization": _key(), "content-type": "application/json"}
+
+
+CHUNK_SIZE = 5 * 1024 * 1024  # 5MB por chunk — evita carregar arquivo inteiro na RAM
+MAX_UPLOAD_RETRIES = 3
+
+
+def _stream_file(file_path: str):
+    """Generator que lê o arquivo em chunks (streaming upload — não estoura RAM)."""
+    with open(file_path, "rb") as f:
+        while True:
+            chunk = f.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            yield chunk
 
 
 def upload_file(file_path: str) -> str:
-    """Upload a local file to AssemblyAI and return the upload URL."""
-    key = os.environ["ASSEMBLYAI_KEY"]
-    with open(file_path, "rb") as f:
-        resp = requests.post(
-            f"{AAI_BASE}/upload",
-            headers={"authorization": key},
-            data=f,
-        )
-    resp.raise_for_status()
-    return resp.json()["upload_url"]
+    """Upload de arquivo local pra AssemblyAI via streaming (resistente a arquivos grandes)."""
+    size_mb = os.path.getsize(file_path) / (1024 * 1024)
+    logger.info(f"[AAI] Uploading {file_path} ({size_mb:.1f} MB)")
+
+    last_err = None
+    for attempt in range(1, MAX_UPLOAD_RETRIES + 1):
+        try:
+            resp = requests.post(
+                f"{AAI_BASE}/upload",
+                headers={"authorization": _key()},
+                data=_stream_file(file_path),   # streaming — não carrega o arquivo todo
+                timeout=(30, 1800),             # (connect 30s, read 30min — pra arquivos grandes)
+            )
+            logger.info(f"[AAI] Upload response: {resp.status_code}")
+            if not resp.ok:
+                raise RuntimeError(f"AAI upload error {resp.status_code}: {resp.text[:300]}")
+            data = resp.json()
+            if "upload_url" not in data:
+                raise RuntimeError(f"AAI upload sem upload_url: {resp.text[:300]}")
+            return data["upload_url"]
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+            last_err = exc
+            wait = 2 ** attempt  # backoff exponencial: 2s, 4s, 8s
+            logger.warning(f"[AAI] Upload tentativa {attempt}/{MAX_UPLOAD_RETRIES} falhou ({type(exc).__name__}). Retentando em {wait}s...")
+            time.sleep(wait)
+
+    raise RuntimeError(f"Upload falhou após {MAX_UPLOAD_RETRIES} tentativas. Verifique sua conexão. Último erro: {last_err}")
 
 
 def transcribe(audio_url: str) -> str:
     """Submit transcription job and poll until done. Returns transcript text."""
+    logger.info(f"[AAI] Starting transcription for {audio_url}")
     resp = requests.post(
         f"{AAI_BASE}/transcript",
         headers=_headers(),
         json={"audio_url": audio_url, "language_detection": True},
+        timeout=30,
     )
-    resp.raise_for_status()
+    logger.info(f"[AAI] Transcript create: {resp.status_code} — {resp.text[:200]}")
+    if not resp.ok:
+        raise RuntimeError(f"AAI transcript error {resp.status_code}: {resp.text[:300]}")
     transcript_id = resp.json()["id"]
+    logger.info(f"[AAI] Polling transcript {transcript_id}")
 
     while True:
         poll = requests.get(
             f"{AAI_BASE}/transcript/{transcript_id}",
             headers=_headers(),
+            timeout=30,
         )
-        poll.raise_for_status()
+        if not poll.ok:
+            raise RuntimeError(f"AAI poll error {poll.status_code}: {poll.text[:300]}")
         data = poll.json()
-        if data["status"] == "completed":
+        status = data.get("status")
+        logger.info(f"[AAI] Transcript status: {status}")
+        if status == "completed":
             return data.get("text") or ""
-        if data["status"] == "error":
-            raise RuntimeError(f"AssemblyAI error: {data.get('error')}")
-        time.sleep(3)
+        if status == "error":
+            raise RuntimeError(f"AAI transcription error: {data.get('error')}")
+        time.sleep(5)
 
 
 def transcribe_file(file_path: str) -> str:
