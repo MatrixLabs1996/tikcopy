@@ -38,7 +38,6 @@ async function saveHookToSwipe(result, niche) {
 // ─── SaveSwipePanel ───────────────────────────────────────────────────────────
 
 function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
-  const [videoUrl, setVideoUrl] = useState('')
   const [obs, setObs] = useState('')
   const [saving, setSaving] = useState(false)
   const [reattached, setReattached] = useState(null)
@@ -66,7 +65,6 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
         avatar: result.avatar,
         seven_layers: result.seven_layers || null,
         observations: obs,
-        source_video_url: videoUrl || null,
       }
 
       if (videoToUpload) {
@@ -84,7 +82,7 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
       } else {
         // Sem o arquivo em mãos (ex: recarregou a página) → salva só o texto
         await api.post('/swipes', {
-          tag: 'ad', content: JSON.stringify(structured), source: videoUrl || null,
+          tag: 'ad', content: JSON.stringify(structured), source: null,
         })
       }
 
@@ -102,46 +100,57 @@ function SaveSwipePanel({ result, niche, projectId, onClose, videoFile }) {
   }
 
   return (
-    <div style={{
-      marginTop: '16px', padding: '16px',
-      background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
-      borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px',
-    }}>
-      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>Salvar no Swipe de Ads</div>
-
-      {/* Vídeo perdido (recarregou a página) → pede pra reanexar pra salvar COM vídeo */}
-      {lostVideo && (
-        <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)' }}>
-          <div style={{ fontSize: '12.5px', color: '#f59e0b', fontWeight: 600, marginBottom: '4px' }}>
-            ⚠️ O vídeo não está mais carregado
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '8px' }}>
-            A página foi recarregada, então o arquivo do vídeo saiu da memória. Pra salvar o anúncio
-            <b> com o player de vídeo</b>, selecione o arquivo de novo abaixo. Sem ele, salva só o texto.
-          </div>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '6px', fontSize: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', cursor: 'pointer', fontFamily: 'var(--font)' }}>
-            <Upload size={13} /> {reattached ? `Vídeo: ${reattached.name}` : 'Selecionar vídeo'}
-            <input
-              type="file"
-              accept="video/*,audio/*"
-              style={{ display: 'none' }}
-              onChange={(e) => setReattached(e.target.files?.[0] || null)}
-            />
-          </label>
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget && !saving) onClose() }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+      }}
+    >
+      <div style={{
+        width: '100%', maxWidth: '440px',
+        background: 'var(--bg-surface)', border: '1px solid var(--border-default)',
+        borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>Salvar no Swipe de Ads</div>
+          <button onClick={onClose} disabled={saving} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+            <X size={18} />
+          </button>
         </div>
-      )}
 
-      <div>
-        <label className="tc-label">Link do vídeo (opcional)</label>
-        <input className="tc-input" placeholder="https://..." value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
-      </div>
-      <div>
-        <label className="tc-label">Observações (opcional)</label>
-        <textarea className="tc-input tc-textarea" placeholder="O que achou interessante neste anúncio?" value={obs} onChange={(e) => setObs(e.target.value)} rows={3} />
-      </div>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button className="tc-btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Confirmar'}</button>
-        <button onClick={onClose} style={{ padding: '8px 14px', borderRadius: '7px', fontSize: '13px', background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)' }}>Cancelar</button>
+        {/* Vídeo perdido (recarregou a página) → pede pra reanexar pra salvar COM vídeo */}
+        {lostVideo && (
+          <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)' }}>
+            <div style={{ fontSize: '12.5px', color: '#f59e0b', fontWeight: 600, marginBottom: '4px' }}>
+              ⚠️ O vídeo não está mais carregado
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '8px' }}>
+              A página foi recarregada, então o arquivo do vídeo saiu da memória. Pra salvar o anúncio
+              <b> com o player de vídeo</b>, selecione o arquivo de novo abaixo. Sem ele, salva só o texto.
+            </div>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '6px', fontSize: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', cursor: 'pointer', fontFamily: 'var(--font)' }}>
+              <Upload size={13} /> {reattached ? `Vídeo: ${reattached.name}` : 'Selecionar vídeo'}
+              <input
+                type="file"
+                accept="video/*,audio/*"
+                style={{ display: 'none' }}
+                onChange={(e) => setReattached(e.target.files?.[0] || null)}
+              />
+            </label>
+          </div>
+        )}
+
+        <div>
+          <label className="tc-label">Observações (opcional)</label>
+          <textarea className="tc-input tc-textarea" placeholder="O que achou interessante neste anúncio?" value={obs} onChange={(e) => setObs(e.target.value)} rows={3} autoFocus />
+        </div>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button onClick={onClose} disabled={saving} style={{ padding: '9px 16px', borderRadius: '7px', fontSize: '13px', background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)' }}>Cancelar</button>
+          <button className="tc-btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Confirmar'}</button>
+        </div>
       </div>
     </div>
   )
