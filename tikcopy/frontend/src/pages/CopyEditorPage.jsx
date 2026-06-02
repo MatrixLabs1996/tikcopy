@@ -44,6 +44,15 @@ function _fmtClock(totalSec) {
   const r = s % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`
 }
+// Timer mm:ss: pega os dígitos digitados e formata preenchendo da direita
+// (ex: "2"→00:02, "225"→02:25, "2225"→22:25). Devolve a string "MM:SS" ou "".
+function _digitsToClock(raw) {
+  const d = String(raw || '').replace(/\D/g, '').slice(-4)
+  if (!d) return ''
+  const ss = d.slice(-2).padStart(2, '0')
+  const mm = (d.slice(0, -2) || '0').padStart(2, '0')
+  return `${mm}:${ss}`
+}
 // Aceita "mm:ss" / "hh:mm:ss" (ou número puro = minutos) e devolve segundos.
 function _parseTargetSec(str) {
   const t = String(str || '').trim()
@@ -107,12 +116,13 @@ function BodyTimeMeter({ body, stripHtml, targetMin, onChangeTarget }) {
           <Clock size={14} /> Tempo alvo
         </button>
         <input
-          type="text" inputMode="numeric" placeholder="mm:ss"
-          value={targetMin}
-          onChange={(e) => onChangeTarget(e.target.value.replace(/[^0-9:]/g, ''))}
+          type="text" inputMode="numeric" placeholder="00:00"
+          value={targetMin || ''}
+          onChange={(e) => onChangeTarget(_digitsToClock(e.target.value))}
           style={{
-            width: '72px', padding: '4px 8px', borderRadius: '6px', fontSize: '12px',
-            textAlign: 'center', background: 'var(--bg-input)', border: '1px solid var(--border-default)',
+            width: '72px', padding: '4px 8px', borderRadius: '6px', fontSize: '13px',
+            textAlign: 'center', letterSpacing: '1px', fontVariantNumeric: 'tabular-nums',
+            background: 'var(--bg-input)', border: '1px solid var(--border-default)',
             color: 'var(--text-primary)', fontFamily: 'var(--font)',
           }}
         />
