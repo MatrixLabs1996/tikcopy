@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { supabase } from './services/supabase'
 import useAppStore from './stores/useAppStore'
@@ -30,6 +30,44 @@ import ProfileAnalysisPage from './pages/ProfileAnalysisPage'
 import BrainstormPage from './pages/BrainstormPage'
 import AdminPage from './pages/AdminPage'
 import BriefingViewerPage from './pages/BriefingViewerPage'
+
+// Título da aba do navegador por rota → "Página | CopyX"
+const PAGE_TITLES = {
+  '/': 'Início',
+  '/organic': 'Vídeos Orgânicos',
+  '/lessons': 'Podcasts & Aulas',
+  '/ads': 'Anúncios',
+  '/vsl': 'VSL',
+  '/copy-zone': 'Inteligência',
+  '/criar-copy': 'Escrever',
+  '/swipe': 'Swipe File',
+  '/drafts': 'Minhas Copys',
+  '/raio-x': 'Raio-X de Perfil',
+  '/brainstorm': 'Brainstorm ADS',
+  '/briefings': 'Projeto',
+  '/researches': 'Pesquisas',
+  '/history': 'Recentes',
+  '/projects': 'Meus Projetos',
+  '/projects/new': 'Novo Projeto',
+  '/admin': 'Custo & Uso',
+  '/settings': 'Configurações',
+  '/templates': 'Templates',
+  '/login': 'Entrar',
+  '/register': 'Criar conta',
+}
+
+function TitleManager() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    let title = PAGE_TITLES[pathname]
+    if (!title) {
+      if (pathname.includes('/view')) title = 'Documento'
+      else if (pathname.startsWith('/projects/')) title = 'Projeto'
+    }
+    document.title = title ? `${title} | CopyX` : 'CopyX'
+  }, [pathname])
+  return null
+}
 
 export default function App() {
   const { setUser, setSession, clearAuth, setAuthReady } = useAppStore()
@@ -66,6 +104,7 @@ export default function App() {
 
   return (
     <>
+      <TitleManager />
       <Toaster
         position="top-right"
         toastOptions={{
