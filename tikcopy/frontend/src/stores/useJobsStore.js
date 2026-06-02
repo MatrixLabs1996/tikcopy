@@ -41,11 +41,11 @@ const useJobsStore = create(
 
       removeJob: (id) => set((s) => ({ jobs: s.jobs.filter((j) => j.id !== id) })),
 
-      // Limpa concluídos (opcionalmente de um kind específico)
+      // Limpa terminados: concluídos E com erro (opcionalmente de um kind específico)
       clearDone: (kind) =>
         set((s) => ({
           jobs: s.jobs.filter(
-            (j) => !(j.status === 'done' && (!kind || j.kind === kind))
+            (j) => !(TERMINAL.has(j.status) && (!kind || j.kind === kind))
           ),
         })),
 
