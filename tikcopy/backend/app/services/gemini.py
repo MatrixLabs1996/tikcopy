@@ -63,6 +63,69 @@ def _track(user_id, operation, usage_metadata, project_id):
         pass
 
 
+YOUTUBE_TRANSCRIBE_PROMPT = (
+    "Transcreva LITERALMENTE toda a fala deste vídeo, palavra por palavra, "
+    "do início ao fim, no idioma original em que foi falado. "
+    "REGRAS: (1) Não resuma, não comente, não parafraseie. "
+    "(2) Não pule nenhuma frase, incluindo transições. "
+    "(3) Se houver várias vozes, transcreva todas na ordem em que aparecem. "
+    "(4) Responda APENAS com a transcrição corrida, sem cabeçalhos nem aspas."
+)
+
+
+def transcribe_youtube_url(url: str, *, track_user_id=None, operation="transcricao_youtube", track_project_id=None) -> str:
+    """Transcreve um vídeo do YouTube mandando a URL direto pro Gemini.
+
+    Vantagem: quem busca o vídeo é o Google (lado do Gemini), então o bloqueio
+    de IP de datacenter (que derruba yt-dlp e a legenda no servidor) não se aplica.
+    Não baixa nada, não usa cookies. Só funciona pra YouTube (Gemini não aceita
+    URL de TikTok/Instagram). Retorna o texto falado ou levanta exceção."""
+    try:
+        from google import genai as google_genai
+        from google.genai import types as genai_types
+    except ImportError:
+        raise RuntimeError("Instale google-genai: pip install google-genai")
+
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    if not gemini_key:
+        raise ValueError("GEMINI_API_KEY não configurada.")
+
+    client = google_genai.Client(api_key=gemini_key)
+
+    response = None
+    last_exc = None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=genai_types.Content(parts=[
+                    genai_types.Part(file_data=genai_types.FileData(file_uri=url)),
+                    genai_types.Part(text=YOUTUBE_TRANSCRIBE_PROMPT),
+                ]),
+            )
+            break
+        except Exception as exc:
+            msg = str(exc)
+            transient = any(s in msg for s in (
+                "503", "UNAVAILABLE", "overloaded", "high demand",
+                "429", "RESOURCE_EXHAUSTED",
+            ))
+            last_exc = exc
+            if transient and attempt < 2:
+                time.sleep(2 ** (attempt + 1))
+                continue
+            raise
+    if response is None:
+        raise last_exc or RuntimeError("Gemini não respondeu.")
+
+    _track(track_user_id, operation, getattr(response, "usage_metadata", None), track_project_id)
+
+    text = (response.text or "").strip()
+    if not text:
+        raise ValueError("Gemini não conseguiu transcrever o vídeo (vazio — pode ser privado ou sem fala).")
+    return text
+
+
 def analyze_ad(file_path: str, *, track_user_id=None, operation="analise_anuncio", track_project_id=None) -> dict:
     """Analyze an ad video/audio file using Gemini 2.5 Flash."""
     try:

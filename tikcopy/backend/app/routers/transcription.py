@@ -26,13 +26,24 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
         metrics = {}
         audio_path = None
 
-        # YouTube: tenta a LEGENDA primeiro (sem baixar — fura bloqueio de datacenter, de graça)
+        # YouTube: o IP de datacenter do servidor é bloqueado pra download E pra legenda.
+        # Solução: manda a URL direto pro Gemini (quem busca o vídeo é o Google, então
+        # não tem bloqueio de IP). Sem baixar, sem cookies. Fallback: legenda → download.
         if ytdlp.is_youtube(url):
             _jobs[job_id] = {"status": "transcribing"}
-            cap = ytdlp.fetch_youtube_transcript(url)
-            if cap:
-                transcript = cap
-                title = ytdlp.youtube_title(url) or "Vídeo do YouTube"
+            title = ytdlp.youtube_title(url) or "Vídeo do YouTube"
+            # 1) Gemini na URL (caminho principal — fura o bloqueio de datacenter)
+            try:
+                from app.services import gemini
+                transcript = gemini.transcribe_youtube_url(url, track_user_id=user_id, track_project_id=project_id)
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning(f"[transcription] Gemini-URL falhou ({exc}); tentando legenda")
+            # 2) Fallback: legenda do próprio YouTube (de graça, mas costuma bloquear no servidor)
+            if not transcript:
+                cap = ytdlp.fetch_youtube_transcript(url)
+                if cap:
+                    transcript = cap
 
         # Sem legenda (ou TikTok/Instagram): baixa o áudio e transcreve (AssemblyAI)
         if not transcript:
