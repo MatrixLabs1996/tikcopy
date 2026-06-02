@@ -1982,27 +1982,16 @@ export default function CopyEditorPage() {
         <OrganicSwipePickerModal
           onClose={() => setShowOrganicSwipePicker(false)}
           onPick={(item) => {
-            // 1) Campo Comunicação: URL + markdown formatado (Hook + Body)
+            // Preenche o campo Comunicação (organic_base). NÃO mexe na referência ativa:
+            // a aba Referência já mostra esse vídeo pra leitura, e assim não sobrescreve
+            // um conceito do Brainstorm que esteja ocupando o slot de referência.
             const parts = []
             if (item.url) parts.push(item.url)
             if (item.formattedContent) parts.push(item.formattedContent)
             setBriefingField('organic_base', parts.join('\n\n'))
-            // 2) Referência ativa: usa o MESMO markdown — fica idêntico ao
-            //    quando vem do swipe via "Usar como referência"
-            setSelectedRef({
-              id: `swipe-organic-${item.id}`,
-              type: 'transcript_organic',
-              content: item.formattedContent,
-              metadata: {
-                title: item.title,
-                source: 'swipe',
-                niche: item.niche,
-                url: item.url,
-              },
-            })
             setShowOrganicSwipePicker(false)
             setAiOpen(true)
-            toast.success('Importado pra Comunicação e ativado como referência')
+            toast.success('Importado pra Comunicação')
           }}
         />
       )}
