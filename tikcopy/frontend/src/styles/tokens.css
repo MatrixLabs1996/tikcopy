@@ -3,12 +3,12 @@
 /* ── Design tokens ─────────────────────────────────────────── */
 :root {
   /* Paleta quente do tema escuro do Claude (cinza levemente amarronzado) */
-  --bg-base: #262624;
-  --bg-surface: #1f1e1d;
-  --bg-elevated: #30302e;
-  --bg-input: #30302e;
-  --bg-hover: #393937;
-  --bg-active: #3d3c39;
+  --bg-base: #30302e;
+  --bg-surface: #262624;
+  --bg-elevated: #262624;
+  --bg-input: #262624;
+  --bg-hover: #2b2b29;
+  --bg-active: #34332f;
 
   --border-subtle: #35342f;
   --border-default: #3e3d37;
