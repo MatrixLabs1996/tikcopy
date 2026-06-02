@@ -2,21 +2,22 @@
 
 /* ── Design tokens ─────────────────────────────────────────── */
 :root {
-  --bg-base: #121316;
-  --bg-surface: #16171a;
-  --bg-elevated: #1c1d21;
-  --bg-input: #1c1d21;
-  --bg-hover: #232429;
-  --bg-active: #292a31;
+  /* Paleta quente do tema escuro do Claude (cinza levemente amarronzado) */
+  --bg-base: #262624;
+  --bg-surface: #1f1e1d;
+  --bg-elevated: #30302e;
+  --bg-input: #30302e;
+  --bg-hover: #393937;
+  --bg-active: #3d3c39;
 
-  --border-subtle: #24252a;
-  --border-default: #2c2d33;
-  --border-strong: #383942;
+  --border-subtle: #35342f;
+  --border-default: #3e3d37;
+  --border-strong: #4c4a42;
 
-  --text-primary: #f1f1f3;
-  --text-secondary: #c6c6cc;
-  --text-muted: #8a8a93;
-  --text-placeholder: #5f5f68;
+  --text-primary: #f5f4ee;
+  --text-secondary: #d6d3ca;
+  --text-muted: #a8a59b;
+  --text-placeholder: #6f6d64;
 
   --accent: #ff3e5e;
   --accent-hover: rgba(255, 62, 94, 0.88);
