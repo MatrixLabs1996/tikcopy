@@ -1091,17 +1091,23 @@ def generate_brainstorm_ads(ads: list, offer_summary: str = "", niche: str = "",
     client = anthropic.Anthropic()
     resp = client.messages.create(
         model=SONNET_MODEL,
-        max_tokens=4000,
+        max_tokens=8000,
         system=[{"type": "text", "text": BRAINSTORM_SYSTEM, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_content}],
     )
     _track(track_user_id, "brainstorm_ads", SONNET_MODEL, resp.usage, track_project_id)
 
-    raw = resp.content[0].text.strip()
-    match = re.search(r'\{.*\}', raw, re.DOTALL)
-    if not match:
+    raw = (resp.content[0].text or "").strip()
+    # remove cercas markdown ```json ... ```
+    if raw.startswith("```"):
+        raw = re.sub(r"^```(?:json)?", "", raw).strip()
+        raw = re.sub(r"```$", "", raw).strip()
+    start, end = raw.find("{"), raw.rfind("}")
+    if start == -1 or end == -1:
+        logger.warning(f"[brainstorm] sem JSON na resposta (stop={resp.stop_reason}): {raw[:300]}")
         return None
     try:
-        return json.loads(match.group())
-    except json.JSONDecodeError:
+        return json.loads(raw[start:end + 1])
+    except json.JSONDecodeError as exc:
+        logger.warning(f"[brainstorm] JSON invalido (stop={resp.stop_reason}, {exc}): {raw[:300]} ... {raw[-200:]}")
         return None
