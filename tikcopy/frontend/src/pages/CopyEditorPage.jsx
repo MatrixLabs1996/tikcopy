@@ -1116,8 +1116,11 @@ export default function CopyEditorPage() {
     meta,
     current_hooks: (hooks || []).map(h => stripHtml(h.html || '')).filter(Boolean),
     current_body: stripHtml(body || ''),
-    // Referência selecionada no painel → a IA modela este anúncio (estrutura/ritmo).
+    // Referência selecionada no painel. Tipo define o papel na IA:
+    //  - 'concept' (conceito do Brainstorm) → reposicionamento estratégico
+    //  - 'ad' (anúncio do Swipe) → molde de execução a modelar
     reference: selectedRef ? {
+      kind: selectedRef.metadata?.source === 'brainstorm' ? 'concept' : 'ad',
       title: selectedRef.metadata?.title || selectedRef.title || null,
       niche: selectedRef.metadata?.niche || null,
       content: selectedRef.content || '',

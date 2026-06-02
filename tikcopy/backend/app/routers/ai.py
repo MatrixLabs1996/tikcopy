@@ -129,21 +129,33 @@ class ChatRequest(WriterContext):
 def _build_context_block(ctx: WriterContext) -> str:
     """Monta um bloco de texto com o contexto atual da copy pra IA usar."""
     parts = []
-    # Referência selecionada pra MODELAR — vai PRIMEIRO e com destaque máximo.
+    # Referência selecionada — vai PRIMEIRO. O papel muda conforme o tipo:
+    #  - 'concept' (conceito do Brainstorm): reposicionamento estratégico (7 camadas/porta).
+    #  - 'ad' (anúncio do Swipe): molde de execução a modelar.
     if ctx.reference and isinstance(ctx.reference, dict):
         ref_content = (ctx.reference.get("content") or "").strip()
         if ref_content:
-            ref_title = ctx.reference.get("title") or "Anúncio de referência"
+            ref_title = ctx.reference.get("title") or "Referência"
             ref_niche = ctx.reference.get("niche")
-            head = f"ANÚNCIO DE REFERÊNCIA PARA MODELAR — \"{ref_title}\""
+            kind = ctx.reference.get("kind") or "ad"
+            if kind == "concept":
+                head = f"REPOSICIONAMENTO ESTRATÉGICO (conceito do Brainstorm), \"{ref_title}\""
+                instr = (
+                    "Isto NÃO é um anúncio pronto: é a ESTRATÉGIA (Porta de entrada + 7 camadas) que define "
+                    "PARA ONDE este anúncio aponta. Se houver um orgânico da Comunicação no contexto, MANTENHA a "
+                    "estrutura invisível e o ritmo DELE e aplique POR CIMA o avatar, a fatia, o tema, o ângulo e o "
+                    "nível de consciência abaixo, reposicionando o anúncio para um leilão mais limpo. Se NÃO houver "
+                    "orgânico, use estas camadas como o esqueleto estratégico da copy."
+                )
+            else:
+                head = f"ANÚNCIO DE REFERÊNCIA PARA MODELAR, \"{ref_title}\""
+                instr = (
+                    "Modele a ESTRUTURA, o RITMO e o estilo de gancho/CTA deste anúncio validado, adaptando para a "
+                    "oferta atual. NÃO copie literalmente o tema/produto dele; use-o como molde de execução."
+                )
             if ref_niche:
                 head += f" (nicho: {ref_niche})"
-            parts.append(
-                head + "\n"
-                "Modele a ESTRUTURA, o RITMO e o estilo de gancho/CTA deste anúncio validado, "
-                "adaptando para a oferta atual. NÃO copie literalmente o tema/produto dele; "
-                "use-o como molde de execução.\n\n" + ref_content
-            )
+            parts.append(head + "\n" + instr + "\n\n" + ref_content)
     if ctx.meta:
         meta_lines = [f"- {k}: {v}" for k, v in ctx.meta.items() if v]
         if meta_lines:
