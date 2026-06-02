@@ -2,9 +2,9 @@
 
 /* ── Design tokens ─────────────────────────────────────────── */
 :root {
-  /* Fundo escuro (swatch 02) + cards mais claros por cima (swatch 01) */
+  /* Fundo escuro (swatch 02) + cards/sidebar mais claros por cima (swatch 01) */
   --bg-base: #1a1a18;
-  --bg-surface: #1a1a18;
+  --bg-surface: #2b2b29;
   --bg-elevated: #2b2b29;
   --bg-input: #2b2b29;
   --bg-hover: #323230;
