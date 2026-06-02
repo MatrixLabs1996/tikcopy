@@ -10,6 +10,32 @@ from urllib.parse import urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
 
+# Impersonate (--impersonate) só funciona se o yt-dlp tiver um backend disponível
+# (curl_cffi). No servidor isso pode não estar instalado/compilado. Detectamos uma
+# vez: se não houver, NÃO passamos --impersonate (senão o yt-dlp crasha com
+# "Impersonate target ... is not available"). Pro YouTube quem fura o bloqueio é o
+# cookies.txt; o impersonate importa mais pro TikTok.
+_IMPERSONATE_OK: bool | None = None
+
+
+def _impersonate_available() -> bool:
+    global _IMPERSONATE_OK
+    if _IMPERSONATE_OK is not None:
+        return _IMPERSONATE_OK
+    try:
+        import importlib.util
+        ok = importlib.util.find_spec("curl_cffi") is not None
+    except Exception:
+        ok = False
+    _IMPERSONATE_OK = ok
+    logger.warning(f"[ytdlp] impersonate disponivel: {ok} (curl_cffi {'OK' if ok else 'AUSENTE'})")
+    return ok
+
+
+def _imp(target: str) -> list[str]:
+    """Retorna ['--impersonate', target] se o backend existir, senão [] (não crasha)."""
+    return ["--impersonate", target] if _impersonate_available() else []
+
 
 def _extract_youtube_id(url: str) -> str | None:
     """Extrai o ID de 11 caracteres de uma URL do YouTube (watch, youtu.be, shorts, embed)."""
@@ -244,31 +270,27 @@ def download_audio(url: str, job_id: str) -> tuple[str, str, dict]:
     # OBS: NÃO usamos --cookies-from-browser (Brave/Chrome) porque no servidor
     # (Railway/Linux) não existe navegador instalado — só gera erro e desperdiça
     # tentativa. Quando precisar de cookies, use o arquivo cookies.txt.
+    imp_chrome = _imp("Chrome")  # [] se curl_cffi ausente (não crasha)
+    imp_safari = _imp("Safari")
     if is_tiktok:
         # TikTok: PRIORIZA cookies.txt + impersonate (sem cookies raramente rola)
         if cookies:
-            attempt_strategies = [
-                cookies + ["--impersonate", "Chrome"],
-                cookies + ["--impersonate", "Safari"],
-                cookies,
-                ["--impersonate", "Chrome"],
-                [],
-            ]
+            raw = [cookies + imp_chrome, cookies + imp_safari, cookies, imp_chrome, []]
         else:
-            attempt_strategies = [
-                ["--impersonate", "Chrome"],
-                ["--impersonate", "Safari"],
-                [],
-            ]
+            raw = [imp_chrome, imp_safari, []]
     else:
         # YouTube/Instagram: cookies ajuda, mas nem sempre necessário
-        attempt_strategies = []
+        raw = []
         if cookies:
-            attempt_strategies.append(cookies)
-        attempt_strategies.extend([
-            [],
-            ["--impersonate", "Chrome"],
-        ])
+            raw.append(cookies)
+        raw.extend([[], imp_chrome])
+
+    # Remove estratégias vazias duplicadas (quando imp_* vira [] sem cookies)
+    attempt_strategies = []
+    for s in raw:
+        if s in attempt_strategies:
+            continue
+        attempt_strategies.append(s)
 
     # ── 1. Metadata ──
     metrics = {}
