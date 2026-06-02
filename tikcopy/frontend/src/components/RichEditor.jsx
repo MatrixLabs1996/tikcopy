@@ -6,6 +6,7 @@ import Image from '@tiptap/extension-image'
 import Underline from '@tiptap/extension-underline'
 import { Mark, mergeAttributes } from '@tiptap/core'
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   Highlighter, LinkIcon, ImageIcon, MessageSquare, X, Check,
@@ -57,10 +58,37 @@ const HIGHLIGHT_COLORS = [
   { color: '#e9d5ff', label: 'Roxo' },
 ]
 
+// Renderiza um popup via portal (preso ao body, fixed) ancorado num botão.
+// Escapa de qualquer overflow:hidden dos cards (que cortava o popup de comentário).
+function FloatingPopup({ anchorRef, children }) {
+  const [pos, setPos] = useState(null)
+  useEffect(() => {
+    const update = () => {
+      const el = anchorRef?.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      // Mantém dentro da viewport horizontalmente (popup ~280px)
+      const left = Math.min(r.left, window.innerWidth - 300)
+      setPos({ top: r.bottom + 4, left: Math.max(8, left) })
+    }
+    update()
+    window.addEventListener('scroll', update, true)
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('scroll', update, true)
+      window.removeEventListener('resize', update)
+    }
+  }, [anchorRef])
+  if (!pos) return null
+  return createPortal(
+    <div style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999 }}>{children}</div>,
+    document.body,
+  )
+}
+
 function HighlightPicker({ editor, onClose }) {
   return (
     <div style={{
-      position: 'absolute', top: '100%', left: 0, zIndex: 50, marginTop: '4px',
       background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
       borderRadius: '8px', padding: '8px', display: 'flex', gap: '6px', boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
     }}>
@@ -98,7 +126,6 @@ function UrlPopup({ placeholder, onConfirm, onClose }) {
   const [val, setVal] = useState('')
   return (
     <div style={{
-      position: 'absolute', top: '100%', left: 0, zIndex: 50, marginTop: '4px',
       background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
       borderRadius: '8px', padding: '10px', display: 'flex', gap: '6px',
       boxShadow: '0 4px 16px rgba(0,0,0,0.3)', minWidth: '280px',
@@ -127,7 +154,6 @@ function CommentPopup({ onConfirm, onClose }) {
   const [val, setVal] = useState('')
   return (
     <div style={{
-      position: 'absolute', top: '100%', left: 0, zIndex: 50, marginTop: '4px',
       background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
       borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px',
       boxShadow: '0 4px 16px rgba(0,0,0,0.3)', minWidth: '260px',
@@ -156,6 +182,9 @@ function Toolbar({ editor, comments, onAddComment, onDeleteComment, sticky }) {
   const [popup, setPopup] = useState(null) // 'highlight' | 'link' | 'image' | 'comment'
   const [, forceTick] = useState(0)
   const fileInputRef = useRef(null)
+  const highlightRef = useRef(null)
+  const linkRef = useRef(null)
+  const commentRef = useRef(null)
 
   // Re-renderiza toolbar sempre que a seleção mudar (pra ativar/desativar botões)
   useEffect(() => {
@@ -224,16 +253,16 @@ function Toolbar({ editor, comments, onAddComment, onDeleteComment, sticky }) {
 
       <SEP />
 
-      <div style={{ position: 'relative' }}>
+      <div ref={highlightRef} style={{ position: 'relative' }}>
         <TBtn onClick={() => setPopup(popup === 'highlight' ? null : 'highlight')} active={editor?.isActive('highlight')} title="Marca-texto">
           <Highlighter size={13} />
         </TBtn>
-        {popup === 'highlight' && <HighlightPicker editor={editor} onClose={closePopup} />}
+        {popup === 'highlight' && <FloatingPopup anchorRef={highlightRef}><HighlightPicker editor={editor} onClose={closePopup} /></FloatingPopup>}
       </div>
 
       <SEP />
 
-      <div style={{ position: 'relative' }}>
+      <div ref={linkRef} style={{ position: 'relative' }}>
         <TBtn
           onClick={() => setPopup(popup === 'link' ? null : 'link')}
           active={editor?.isActive('link')}
@@ -242,7 +271,7 @@ function Toolbar({ editor, comments, onAddComment, onDeleteComment, sticky }) {
         >
           <LinkIcon size={13} />
         </TBtn>
-        {popup === 'link' && <UrlPopup placeholder="https://..." onConfirm={handleLink} onClose={closePopup} />}
+        {popup === 'link' && <FloatingPopup anchorRef={linkRef}><UrlPopup placeholder="https://..." onConfirm={handleLink} onClose={closePopup} /></FloatingPopup>}
       </div>
 
       <div style={{ position: 'relative' }}>
@@ -260,11 +289,11 @@ function Toolbar({ editor, comments, onAddComment, onDeleteComment, sticky }) {
 
       <SEP />
 
-      <div style={{ position: 'relative' }}>
+      <div ref={commentRef} style={{ position: 'relative' }}>
         <TBtn onClick={() => setPopup(popup === 'comment' ? null : 'comment')} disabled={!hasSelection} title="Adicionar comentário (selecione texto primeiro)" active={popup === 'comment'}>
           <MessageSquare size={13} />
         </TBtn>
-        {popup === 'comment' && <CommentPopup onConfirm={handleComment} onClose={closePopup} />}
+        {popup === 'comment' && <FloatingPopup anchorRef={commentRef}><CommentPopup onConfirm={handleComment} onClose={closePopup} /></FloatingPopup>}
       </div>
 
       {comments.length > 0 && (
