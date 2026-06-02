@@ -12,6 +12,7 @@ import Markdown from '../components/Markdown'
 import SuggestionButton from '../components/SuggestionButton'
 import ChatPanel from '../components/ChatPanel'
 import StructureGuide from '../components/StructureGuide'
+import SevenLayers from '../components/SevenLayers'
 
 // Boost (modelo Opus) escondido da UI por ora — toda a engrenagem (estado, backend,
 // _pick_model) continua no código. Vira `true` pra reativar quando validar em teste
@@ -762,6 +763,9 @@ function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelec
   const hasBrainstorm = selectedRef?.metadata?.source === 'brainstorm'
   // O seletor de anúncio não enxerga o conceito do brainstorm (ele vive na aba dele).
   const swipeSelected = hasBrainstorm ? null : selectedRef
+  // Anúncio do swipe com as 7 camadas salvas → ganha aba própria pra consulta.
+  const refLayers = (!hasBrainstorm && selectedRef?.metadata?.seven_layers) || null
+  const hasRefLayers = !!refLayers
 
   // Volta pra Referência se a aba ativa deixou de existir.
   useEffect(() => {
@@ -769,9 +773,10 @@ function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelec
   }, [writeMode]) // eslint-disable-line
   useEffect(() => {
     if (!hasBrainstorm && tab === 'brainstorm') setTab('ref')
-  }, [hasBrainstorm]) // eslint-disable-line
+    if (!hasRefLayers && tab === '7camadas') setTab('ref')
+  }, [hasBrainstorm, hasRefLayers]) // eslint-disable-line
 
-  const showTabs = writeMode === 'hibrido' || hasBrainstorm
+  const showTabs = writeMode === 'hibrido' || hasBrainstorm || hasRefLayers
   const TabBtn = ({ id, label, color }) => (
     <button
       onClick={() => setTab(id)}
@@ -793,6 +798,7 @@ function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelec
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-default)', flexShrink: 0, background: 'var(--bg-elevated)' }}>
           {writeMode === 'hibrido' && <TabBtn id="chat" label="✨ Chat IA" color="#8b5cf6" />}
           <TabBtn id="ref" label="📖 Referência" color="var(--accent)" />
+          {hasRefLayers && <TabBtn id="7camadas" label="✦ 7 Camadas" color="#f43f5e" />}
           {hasBrainstorm && <TabBtn id="brainstorm" label="✦ Brainstorm" color="#f43f5e" />}
         </div>
       )}
@@ -814,6 +820,13 @@ function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelec
               </button>
             </div>
             <Markdown>{selectedRef.content}</Markdown>
+          </div>
+        ) : tab === '7camadas' && hasRefLayers ? (
+          <div style={{ height: '100%', overflowY: 'auto', padding: '14px 16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>
+              As 7 camadas macro do anúncio de referência. Use de guia pra modelar a estrutura.
+            </div>
+            <SevenLayers data={refLayers} />
           </div>
         ) : (
           <ReferencePanel
@@ -1235,7 +1248,7 @@ export default function CopyEditorPage() {
           title: c.title || 'Anúncio (swipe)',
           // mesmo sem conteúdo rico, mantém (mostra ao menos o título) — não some da lista
           content: content || `(anúncio sem texto salvo)`,
-          metadata: { title: c.title, source: 'swipe', niche: c.niche },
+          metadata: { title: c.title, source: 'swipe', niche: c.niche, seven_layers: c.seven_layers || null },
         }
       })
       setSwipeRefs([...mapOrg, ...mapAd])
@@ -1367,6 +1380,7 @@ export default function CopyEditorPage() {
             title: content.title || `Swipe de ${swipe.tag}`,
             source: 'swipe',
             niche: content.niche,
+            seven_layers: content.seven_layers || null,
           },
         }
         setSelectedRef(virtual)
