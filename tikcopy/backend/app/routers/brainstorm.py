@@ -23,6 +23,12 @@ class BrainstormRequest(BaseModel):
     niche: Optional[str] = None
 
 
+class CouncilRequest(BaseModel):
+    project_id: Optional[str] = None
+    concepts: list[dict] = []
+    niche: Optional[str] = None
+
+
 def _parse(content):
     try:
         return json.loads(content) if isinstance(content, str) else (content or {})
@@ -78,4 +84,30 @@ async def generate_brainstorm(body: BrainstormRequest, current_user=Depends(get_
     if not result:
         raise HTTPException(status_code=502, detail="A IA não retornou um brainstorm válido. Tente de novo.")
     result["_meta"] = {"ads_count": len(ads), "niche": niche}
+    return result
+
+
+@router.post("/council")
+async def run_council(body: CouncilRequest, current_user=Depends(get_current_user)):
+    """Conselho dos 5: pressiona os conceitos gerados e crava um veredito."""
+    if not body.concepts:
+        raise HTTPException(status_code=422, detail="Gere os conceitos primeiro.")
+
+    offer_summary = ""
+    niche = (body.niche or "").strip()
+    try:
+        from app.routers.ai import _get_offer
+        offer = _get_offer(current_user.id, body.project_id) or {}
+        offer_summary = offer.get("content") or ""
+        if not niche:
+            niche = offer.get("market") or ""
+    except Exception as exc:
+        logger.warning(f"[council] sem oferta: {exc}")
+
+    result = claude.brainstorm_council(
+        body.concepts, offer_summary=offer_summary, niche=niche,
+        track_user_id=current_user.id, track_project_id=body.project_id,
+    )
+    if not result:
+        raise HTTPException(status_code=502, detail="O conselho não retornou um veredito válido. Tente de novo.")
     return result

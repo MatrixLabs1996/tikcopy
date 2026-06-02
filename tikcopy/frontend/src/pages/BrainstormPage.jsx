@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, Loader2, CheckSquare, Square, DoorOpen, TrendingUp, Lightbulb, ArrowRight } from 'lucide-react'
+import { Sparkles, Loader2, CheckSquare, Square, DoorOpen, TrendingUp, Lightbulb, ArrowRight, Scale, AlertTriangle, Wrench } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import useAppStore from '../stores/useAppStore'
@@ -23,6 +23,8 @@ export default function BrainstormPage() {
   const [loadingAds, setLoadingAds] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState(null)
+  const [council, setCouncil] = useState(null)
+  const [councilLoading, setCouncilLoading] = useState(false)
 
   useEffect(() => {
     setLoadingAds(true)
@@ -57,6 +59,7 @@ export default function BrainstormPage() {
     if (selectedIds.length === 0) return toast.error('Selecione ao menos 1 anúncio.')
     setGenerating(true)
     setResult(null)
+    setCouncil(null)
     try {
       const res = await api.post('/brainstorm', {
         project_id: activeProject?.id || null,
@@ -68,6 +71,24 @@ export default function BrainstormPage() {
       toast.error(err.response?.data?.detail || 'Erro ao gerar brainstorm.')
     } finally {
       setGenerating(false)
+    }
+  }
+
+  const runCouncil = async () => {
+    if (!result?.conceitos?.length) return
+    setCouncilLoading(true)
+    setCouncil(null)
+    try {
+      const res = await api.post('/brainstorm/council', {
+        project_id: activeProject?.id || null,
+        concepts: result.conceitos,
+        niche: niche || result?._meta?.niche || null,
+      })
+      setCouncil(res.data)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Erro ao chamar o conselho.')
+    } finally {
+      setCouncilLoading(false)
     }
   }
 
@@ -203,10 +224,93 @@ export default function BrainstormPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Conselho dos 5 — pressão opcional sobre os conceitos */}
+              {!council && (
+                <button
+                  onClick={runCouncil}
+                  disabled={councilLoading}
+                  style={{ marginTop: '16px', width: '100%', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, background: 'rgba(139,92,246,0.1)', border: '1px solid #8b5cf6', color: '#8b5cf6', cursor: councilLoading ? 'wait' : 'pointer', fontFamily: 'var(--font)' }}
+                >
+                  {councilLoading ? <><Loader2 size={15} className="tc-spin" /> Conselho debatendo…</> : <><Scale size={15} /> Passar pelo conselho dos 5</>}
+                </button>
+              )}
+
+              {council && <CouncilVerdict council={council} />}
             </div>
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function CouncilVerdict({ council }) {
+  return (
+    <div style={{ marginTop: '20px', border: '1px solid #8b5cf6', borderRadius: '10px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'rgba(139,92,246,0.08)', borderBottom: '1px solid rgba(139,92,246,0.3)' }}>
+        <Scale size={16} style={{ color: '#8b5cf6' }} />
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#8b5cf6' }}>Veredito do Conselho dos 5</span>
+      </div>
+      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {council.veredito && (
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.6, padding: '12px 14px', background: 'var(--bg-elevated)', borderRadius: '8px', borderLeft: '3px solid #8b5cf6' }}>
+            {council.veredito}
+          </div>
+        )}
+
+        {(council.top_apostas || []).length > 0 && (
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#22c55e', marginBottom: '8px' }}>🎯 Apostas do conselho</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {council.top_apostas.map((a, i) => (
+                <div key={i} style={{ border: '1px solid var(--border-default)', borderRadius: '8px', padding: '12px 14px', background: 'var(--bg-surface)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>{a.conceito}</span>
+                    {a.nota && <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', color: '#22c55e', border: '1px solid #22c55e' }}>{a.nota}</span>}
+                  </div>
+                  {a.por_que && <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '8px' }}>{a.por_que}</div>}
+                  {(a.lentes || []).map((l, j) => (
+                    <div key={j} style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '3px' }}>
+                      <b style={{ color: 'var(--text-muted)' }}>{l.conselheiro}:</b> {l.comentario}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(council.riscos || []).length > 0 && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#ef4444', marginBottom: '8px' }}>
+              <AlertTriangle size={13} /> Riscos
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {council.riscos.map((r, i) => (
+                <div key={i} style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  <b style={{ color: 'var(--text-primary)' }}>{r.conceito}</b> <span style={{ color: 'var(--text-muted)' }}>({r.conselheiro})</span>: {r.alerta}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(council.ajustes || []).length > 0 && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f59e0b', marginBottom: '8px' }}>
+              <Wrench size={13} /> Ajustes sugeridos
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {council.ajustes.map((a, i) => (
+                <div key={i} style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  <b style={{ color: 'var(--text-primary)' }}>{a.conceito}:</b> {a.ajuste}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

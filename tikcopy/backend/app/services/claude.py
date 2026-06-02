@@ -1118,3 +1118,110 @@ def generate_brainstorm_ads(ads: list, offer_summary: str = "", niche: str = "",
     except json.JSONDecodeError as exc:
         logger.warning(f"[brainstorm] JSON invalido (stop={resp.stop_reason}, {exc}): {raw[:300]} ... {raw[-200:]}")
         return None
+
+
+# ─── Conselho dos 5 (pressão sobre os conceitos do Brainstorm) ────────────────
+
+COUNCIL_SYSTEM = """Você simula um CONSELHO de 5 especialistas que pressiona conceitos de anúncio de
+Direct Response e crava um veredito honesto. Cada conselheiro olha por uma lente diferente. O
+objetivo não é elogiar, é dizer em qual conceito apostar primeiro, qual vai flopar e o que ajustar.
+
+REGRA DE ESCRITA: nunca use travessões. Comentários curtos, diretos, sem enrolação.
+
+OS 5 CONSELHEIROS:
+1. COMPRADOR DE MÍDIA: pensa em leilão, CPM, CPC, o que o Andromeda premia, potencial de escala.
+   Pergunta: esse conceito cai num leilão mais limpo? Parece nativo o suficiente pra baratear métrica?
+2. COPYWRITER DR: força do gancho, congruência com a oferta, clareza da big idea, identificação.
+   Pergunta: o hook para o scroll? A estrutura conduz ao clique? Bate com a oferta?
+3. O CÉTICO: advogado do diabo. Procura saturação, clichê, ideia que já rodou demais, promessa fraca.
+   Pergunta: isso é realmente novo nesse nicho ou já vi mil vezes?
+4. COMPLIANCE: risco de política do Meta (promessa de saúde/renda agressiva, antes/depois, etc.).
+   Pergunta: isso passa na revisão do Meta ou toma reprovação/restrição de conta?
+5. ESTRATEGISTA DE ESCALA: longevidade e variação. Pergunta: esse conceito rende dezenas de variações
+   trocando camadas? Ou morre rápido? Vale virar uma linha de criativos?
+
+TAREFA: avalie os conceitos recebidos. Escolha as melhores apostas, aponte riscos e dê ajustes
+concretos. Seja decisivo: diga por qual COMEÇAR.
+
+Responda APENAS com JSON válido neste formato exato:
+{
+  "veredito": "1 a 2 frases: por qual conceito começar e por quê (decisão clara).",
+  "top_apostas": [
+    {
+      "conceito": "titulo do conceito",
+      "nota": "Alta | Média",
+      "por_que": "sintese de 1 frase do consenso",
+      "lentes": [
+        {"conselheiro": "Comprador de Mídia", "comentario": "1 frase"},
+        {"conselheiro": "Copywriter DR", "comentario": "1 frase"},
+        {"conselheiro": "Estrategista de Escala", "comentario": "1 frase"}
+      ]
+    }
+  ],
+  "riscos": [
+    {"conceito": "titulo", "conselheiro": "O Cético | Compliance", "alerta": "qual o risco, 1 frase"}
+  ],
+  "ajustes": [
+    {"conceito": "titulo", "ajuste": "o que mudar pra deixar forte, 1 frase"}
+  ]
+}"""
+
+
+def brainstorm_council(concepts: list, offer_summary: str = "", niche: str = "",
+                       track_user_id=None, track_project_id=None) -> dict | None:
+    """Roda o Conselho dos 5 sobre os conceitos do brainstorm. `concepts` = lista de dicts
+    (titulo, porta, probabilidade, racional, camadas). Retorna veredito ou None."""
+    if not concepts:
+        return None
+
+    blocks = []
+    for i, c in enumerate(concepts, 1):
+        parts = [f"### CONCEITO {i}: {c.get('titulo') or 'Sem título'}"]
+        if c.get("porta"):
+            parts.append(f"Porta: {c['porta']}")
+        if c.get("probabilidade"):
+            parts.append(f"Probabilidade (auto): {c['probabilidade']}")
+        if c.get("racional"):
+            parts.append(f"Racional: {c['racional']}")
+        cam = c.get("camadas") or {}
+        if isinstance(cam, dict):
+            cam_lines = []
+            for k in ("estrutura_invisivel", "formato", "angulo", "fatia_publico",
+                      "avatar", "tema", "nivel_consciencia"):
+                v = cam.get(k)
+                val = v.get("valor") if isinstance(v, dict) else v
+                if val:
+                    cam_lines.append(f"  - {k}: {val}")
+            if cam_lines:
+                parts.append("Camadas:\n" + "\n".join(cam_lines))
+        blocks.append("\n".join(parts))
+    concepts_text = "\n\n".join(blocks)
+
+    head = []
+    if offer_summary:
+        head.append(f"OFERTA ATUAL (os conceitos têm que ser congruentes com ela):\n{offer_summary[:1500]}")
+    if niche:
+        head.append(f"NICHO: {niche}")
+    user_content = ("\n\n".join(head) + "\n\n" if head else "") + \
+        f"CONCEITOS PARA O CONSELHO AVALIAR:\n\n{concepts_text}"
+
+    client = anthropic.Anthropic()
+    resp = client.messages.create(
+        model=SONNET_MODEL,
+        max_tokens=4000,
+        system=[{"type": "text", "text": COUNCIL_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+        messages=[{"role": "user", "content": user_content}],
+    )
+    _track(track_user_id, "brainstorm_conselho", SONNET_MODEL, resp.usage, track_project_id)
+
+    raw = (resp.content[0].text or "").strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```(?:json)?", "", raw).strip()
+        raw = re.sub(r"```$", "", raw).strip()
+    start, end = raw.find("{"), raw.rfind("}")
+    if start == -1 or end == -1:
+        return None
+    try:
+        return json.loads(raw[start:end + 1])
+    except json.JSONDecodeError:
+        return None
