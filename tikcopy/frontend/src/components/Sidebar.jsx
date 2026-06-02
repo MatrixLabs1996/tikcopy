@@ -2,7 +2,8 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Video, GraduationCap, Megaphone, MessageSquare,
   PenLine, FileText, BookOpen, Search, Clock,
-  Settings, LogOut, Sun, Moon, FolderOpen, ChevronRight, Layers, TvMinimalPlay, Radar, Sparkles,
+  Settings, LogOut, FolderOpen, ChevronRight, Layers, TvMinimalPlay, Radar, Sparkles,
+  PanelLeftClose, PanelLeft,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { BarChart3 } from 'lucide-react'
@@ -11,20 +12,19 @@ import { supabase } from '../services/supabase'
 import { guardedNavigate } from '../stores/editorNavGuard'
 import api from '../services/api'
 
-function NavItem({ to, icon: Icon, label }) {
+function NavItem({ to, icon: Icon, label, collapsed }) {
   const navigate = useNavigate()
   return (
     <NavLink
       to={to}
-      onClick={(e) => {
-        e.preventDefault()
-        guardedNavigate(navigate, to)
-      }}
+      title={collapsed ? label : undefined}
+      onClick={(e) => { e.preventDefault(); guardedNavigate(navigate, to) }}
       style={({ isActive }) => ({
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
-        padding: '7px 8px',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        gap: collapsed ? 0 : '8px',
+        padding: collapsed ? '9px 0' : '7px 8px',
         borderRadius: '6px',
         fontSize: '13px',
         color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -35,30 +35,27 @@ function NavItem({ to, icon: Icon, label }) {
         transition: 'background 0.12s, color 0.12s',
       })}
     >
-      <Icon size={14} />
-      {label}
+      <Icon size={collapsed ? 17 : 14} style={{ flexShrink: 0 }} />
+      {!collapsed && label}
     </NavLink>
   )
 }
 
-function SectionLabel({ label }) {
+function SectionLabel({ label, collapsed }) {
+  if (collapsed) return <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '10px 8px' }} />
   return (
     <div style={{
-      fontSize: '10px',
-      fontWeight: 500,
-      letterSpacing: '0.08em',
-      textTransform: 'uppercase',
-      color: 'var(--text-muted)',
-      padding: '4px 0 6px',
-      marginTop: '8px',
+      fontSize: '10px', fontWeight: 500, letterSpacing: '0.08em',
+      textTransform: 'uppercase', color: 'var(--text-muted)',
+      padding: '4px 0 6px', marginTop: '8px',
     }}>
       {label}
     </div>
   )
 }
 
-export default function Sidebar() {
-  const { user, theme, toggleTheme, clearAuth, activeProject } = useAppStore()
+export default function Sidebar({ collapsed = false, onToggle }) {
+  const { user, theme, clearAuth, activeProject } = useAppStore()
   const navigate = useNavigate()
   const [isAdmin, setIsAdmin] = useState(false)
 
@@ -84,109 +81,122 @@ export default function Sidebar() {
       position: 'fixed',
       left: 0,
       top: 0,
+      transition: 'width 0.15s ease',
     }}>
-      {/* ── Topo fixo: brand + projeto ── */}
-      <div style={{ flexShrink: 0, padding: '14px 12px 0' }}>
-        <NavLink to="/" style={{ textDecoration: 'none' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingBottom: '10px',
-            borderBottom: '1px solid var(--border-subtle)',
-            marginBottom: '12px',
-          }}>
-            <img
-              src={theme === 'dark' ? '/logo-dark.png' : '/logo.png'}
-              alt="CopyX"
-              style={{ width: '50%', height: 'auto', display: 'block', maxHeight: '40px', objectFit: 'contain' }}
-            />
-          </div>
-        </NavLink>
+      {/* ── Topo: brand + toggle + projeto ── */}
+      <div style={{ flexShrink: 0, padding: collapsed ? '12px 8px 0' : '14px 12px 0' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'space-between',
+          paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '12px',
+        }}>
+          {!collapsed && (
+            <NavLink to="/" style={{ textDecoration: 'none', display: 'flex', flex: 1, justifyContent: 'center' }}>
+              <img
+                src={theme === 'dark' ? '/logo-dark.png' : '/logo.png'}
+                alt="CopyX"
+                style={{ width: '50%', height: 'auto', maxHeight: '40px', objectFit: 'contain' }}
+              />
+            </NavLink>
+          )}
+          <button
+            onClick={onToggle}
+            title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', padding: '4px', display: 'flex', alignItems: 'center', flexShrink: 0,
+            }}
+          >
+            {collapsed ? <PanelLeft size={17} /> : <PanelLeftClose size={16} />}
+          </button>
+        </div>
 
-        <NavLink to="/projects" style={{ textDecoration: 'none', marginBottom: '10px', display: 'block' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '8px 10px', borderRadius: '7px',
-            background: activeProject ? 'rgba(255,62,94,0.06)' : 'var(--bg-elevated)',
-            border: `1px solid ${activeProject ? 'rgba(255,62,94,0.2)' : 'var(--border-default)'}`,
-            cursor: 'pointer', transition: 'all 0.12s',
-          }}>
-            <FolderOpen size={13} color={activeProject ? 'var(--accent)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '1px' }}>Projeto ativo</div>
-              <div style={{
-                fontSize: '12px', fontWeight: 500,
-                color: activeProject ? 'var(--text-primary)' : 'var(--text-muted)',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {activeProject ? activeProject.name : 'Nenhum selecionado'}
-              </div>
+        {collapsed ? (
+          <NavLink to="/projects" title={activeProject ? activeProject.name : 'Projetos'} style={{ textDecoration: 'none', display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '38px', height: '38px', borderRadius: '8px',
+              background: activeProject ? 'rgba(255,62,94,0.06)' : 'var(--bg-elevated)',
+              border: `1px solid ${activeProject ? 'rgba(255,62,94,0.2)' : 'var(--border-default)'}`,
+            }}>
+              <FolderOpen size={15} color={activeProject ? 'var(--accent)' : 'var(--text-muted)'} />
             </div>
-            <ChevronRight size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-          </div>
-        </NavLink>
+          </NavLink>
+        ) : (
+          <NavLink to="/projects" style={{ textDecoration: 'none', marginBottom: '10px', display: 'block' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '8px 10px', borderRadius: '7px',
+              background: activeProject ? 'rgba(255,62,94,0.06)' : 'var(--bg-elevated)',
+              border: `1px solid ${activeProject ? 'rgba(255,62,94,0.2)' : 'var(--border-default)'}`,
+              cursor: 'pointer', transition: 'all 0.12s',
+            }}>
+              <FolderOpen size={13} color={activeProject ? 'var(--accent)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '1px' }}>Projeto ativo</div>
+                <div style={{ fontSize: '12px', fontWeight: 500, color: activeProject ? 'var(--text-primary)' : 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {activeProject ? activeProject.name : 'Nenhum selecionado'}
+                </div>
+              </div>
+              <ChevronRight size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+            </div>
+          </NavLink>
+        )}
       </div>
 
       {/* ── Meio scrollável: nav ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px' }}>
-        <SectionLabel label="Transcrever" />
-        <NavItem to="/organic" icon={Video} label="Vídeos Orgânicos" />
-        <NavItem to="/lessons" icon={GraduationCap} label="Podcasts & Aulas" />
-        <NavItem to="/ads" icon={Megaphone} label="Anúncios" />
-        <NavItem to="/vsl" icon={TvMinimalPlay} label="VSL" />
+      <div style={{ flex: 1, overflowY: 'auto', padding: collapsed ? '0 8px' : '0 12px' }}>
+        <SectionLabel label="Transcrever" collapsed={collapsed} />
+        <NavItem to="/organic" icon={Video} label="Vídeos Orgânicos" collapsed={collapsed} />
+        <NavItem to="/lessons" icon={GraduationCap} label="Podcasts & Aulas" collapsed={collapsed} />
+        <NavItem to="/ads" icon={Megaphone} label="Anúncios" collapsed={collapsed} />
+        <NavItem to="/vsl" icon={TvMinimalPlay} label="VSL" collapsed={collapsed} />
 
-        <SectionLabel label="Copy" />
-        <NavItem to="/copy-zone" icon={MessageSquare} label="Inteligência" />
-        <NavItem to="/criar-copy" icon={PenLine} label="Escrever" />
-        <NavItem to="/swipe" icon={Layers} label="Swipe File" />
-        <NavItem to="/drafts" icon={FileText} label="Minhas Copys" />
+        <SectionLabel label="Copy" collapsed={collapsed} />
+        <NavItem to="/copy-zone" icon={MessageSquare} label="Inteligência" collapsed={collapsed} />
+        <NavItem to="/criar-copy" icon={PenLine} label="Escrever" collapsed={collapsed} />
+        <NavItem to="/swipe" icon={Layers} label="Swipe File" collapsed={collapsed} />
+        <NavItem to="/drafts" icon={FileText} label="Minhas Copys" collapsed={collapsed} />
 
-        <SectionLabel label="Análise" />
-        <NavItem to="/raio-x" icon={Radar} label="Raio-X de Perfil" />
-        <NavItem to="/brainstorm" icon={Sparkles} label="Brainstorm ADS" />
+        <SectionLabel label="Análise" collapsed={collapsed} />
+        <NavItem to="/raio-x" icon={Radar} label="Raio-X de Perfil" collapsed={collapsed} />
+        <NavItem to="/brainstorm" icon={Sparkles} label="Brainstorm ADS" collapsed={collapsed} />
 
-        <SectionLabel label="Pesquisa" />
-        <NavItem to="/briefings" icon={BookOpen} label="Projeto" />
-        <NavItem to="/researches" icon={Search} label="Pesquisas" />
+        <SectionLabel label="Pesquisa" collapsed={collapsed} />
+        <NavItem to="/briefings" icon={BookOpen} label="Projeto" collapsed={collapsed} />
+        <NavItem to="/researches" icon={Search} label="Pesquisas" collapsed={collapsed} />
 
-        <SectionLabel label="Histórico" />
-        <NavItem to="/history" icon={Clock} label="Recentes" />
+        <SectionLabel label="Histórico" collapsed={collapsed} />
+        <NavItem to="/history" icon={Clock} label="Recentes" collapsed={collapsed} />
 
-        <SectionLabel label="Projetos" />
-        <NavItem to="/projects" icon={FolderOpen} label="Meus Projetos" />
+        <SectionLabel label="Projetos" collapsed={collapsed} />
+        <NavItem to="/projects" icon={FolderOpen} label="Meus Projetos" collapsed={collapsed} />
       </div>
 
-      {/* ── Rodapé fixo: user + logout + tema ── */}
-      <div style={{ flexShrink: 0, borderTop: '1px solid var(--border-subtle)', padding: '12px 12px 16px' }}>
-        <div style={{ marginBottom: '8px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '2px' }}>
-            {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
+      {/* ── Rodapé: user + admin + settings + logout ── */}
+      <div style={{ flexShrink: 0, borderTop: '1px solid var(--border-subtle)', padding: collapsed ? '10px 8px 14px' : '12px 12px 16px' }}>
+        {!collapsed && (
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '2px' }}>
+              {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</div>
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{user?.email}</div>
-        </div>
+        )}
 
-        {isAdmin && <NavItem to="/admin" icon={BarChart3} label="Custo & Uso (admin)" />}
-        <NavItem to="/settings" icon={Settings} label="Configurações" />
-        <button onClick={handleLogout} style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          width: '100%', padding: '7px 8px', borderRadius: '6px',
-          fontSize: '13px', color: 'var(--text-muted)', background: 'transparent',
-          border: 'none', cursor: 'pointer', fontFamily: 'var(--font)',
-          transition: 'color 0.12s',
-        }}>
-          <LogOut size={14} /> Sair
-        </button>
-
-        <button onClick={toggleTheme} style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          width: '100%', padding: '7px 8px', borderRadius: '6px',
-          fontSize: '12px', color: 'var(--text-muted)', background: 'transparent',
-          border: 'none', cursor: 'pointer', fontFamily: 'var(--font)',
-          marginTop: '2px',
-        }}>
-          {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
-          {theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+        {isAdmin && <NavItem to="/admin" icon={BarChart3} label="Custo & Uso (admin)" collapsed={collapsed} />}
+        <NavItem to="/settings" icon={Settings} label="Configurações" collapsed={collapsed} />
+        <button
+          onClick={handleLogout}
+          title={collapsed ? 'Sair' : undefined}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start',
+            gap: collapsed ? 0 : '8px', width: '100%', padding: collapsed ? '9px 0' : '7px 8px',
+            borderRadius: '6px', fontSize: '13px', color: 'var(--text-muted)', background: 'transparent',
+            border: 'none', cursor: 'pointer', fontFamily: 'var(--font)', transition: 'color 0.12s',
+          }}
+        >
+          <LogOut size={collapsed ? 17 : 14} style={{ flexShrink: 0 }} /> {!collapsed && 'Sair'}
         </button>
       </div>
     </aside>

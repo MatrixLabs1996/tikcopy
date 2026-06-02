@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
@@ -20,6 +20,16 @@ export default function AppLayout() {
   const setActiveProject = useAppStore((s) => s.setActiveProject)
   const user = useAppStore((s) => s.user)
   const loadTaxonomy = useTaxonomyStore((s) => s.load)
+
+  // Sidebar recolhida (só ícones) — persiste a escolha
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebarCollapsed') === '1' } catch { return false }
+  })
+  const toggleCollapsed = () => setCollapsed((v) => {
+    const nv = !v
+    try { localStorage.setItem('sidebarCollapsed', nv ? '1' : '0') } catch {}
+    return nv
+  })
 
   // Carrega nichos/formatos custom já usados (pra dropdowns mostrarem tudo)
   useEffect(() => { if (user) loadTaxonomy() }, [user?.id]) // eslint-disable-line
@@ -47,8 +57,8 @@ export default function AppLayout() {
   }, [user?.id]) // eslint-disable-line
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <Sidebar />
+    <div style={{ display: 'flex', height: '100vh', '--sidebar-width': collapsed ? '64px' : '220px' }}>
+      <Sidebar collapsed={collapsed} onToggle={toggleCollapsed} />
       <Topbar />
       <div style={{
         marginLeft: 'var(--sidebar-width)',

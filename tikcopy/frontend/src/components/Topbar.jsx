@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { ChevronDown, Plus } from 'lucide-react'
+import { ChevronDown, Plus, Sun, Moon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import useAppStore from '../stores/useAppStore'
 import api from '../services/api'
 
 export default function Topbar() {
-  const { user, activeProject, setActiveProject } = useAppStore()
+  const { user, activeProject, setActiveProject, theme, toggleTheme } = useAppStore()
   const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [open, setOpen] = useState(false)
@@ -95,9 +95,23 @@ export default function Topbar() {
         )}
       </div>
 
-      {/* Right: user plan badge */}
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-        {user?.email}
+      {/* Right: tema + email */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <button
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '30px', height: '30px', borderRadius: '7px',
+            background: 'transparent', border: '1px solid var(--border-default)',
+            color: 'var(--text-muted)', cursor: 'pointer',
+          }}
+        >
+          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+          {user?.email}
+        </div>
       </div>
     </header>
   )
