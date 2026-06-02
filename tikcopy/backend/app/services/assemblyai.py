@@ -23,7 +23,7 @@ def _track(user_id, operation, audio_duration_sec, project_id):
         minutes = (audio_duration_sec or 0) / 60.0
         track_flat(
             user_id=user_id, operation=operation, provider="assemblyai",
-            model="universal", cost_usd=minutes * AAI_USD_PER_MIN,
+            model="universal-3-pro", cost_usd=minutes * AAI_USD_PER_MIN,
             units=round(minutes, 3), project_id=project_id,
             meta={"seconds": audio_duration_sec},
         )
@@ -89,10 +89,18 @@ def upload_file(file_path: str) -> str:
 def transcribe(audio_url: str, *, track_user_id=None, operation="transcricao", track_project_id=None) -> str:
     """Submit transcription job and poll until done. Returns transcript text."""
     logger.info(f"[AAI] Starting transcription for {audio_url}")
+    # speech_models (plural) é o parâmetro novo da AssemblyAI; o antigo speech_model
+    # está deprecado e cai no Universal "v1", que ENGOLE trechos de fala (ex.: voz
+    # sobre música). universal-3-pro é o modelo do dashboard (mais preciso) e cai
+    # automaticamente pro universal-2 em idiomas que o 3-pro não cobre.
     resp = requests.post(
         f"{AAI_BASE}/transcript",
         headers=_headers(),
-        json={"audio_url": audio_url, "language_detection": True},
+        json={
+            "audio_url": audio_url,
+            "language_detection": True,
+            "speech_models": ["universal-3-pro", "universal-2"],
+        },
         timeout=30,
     )
     logger.info(f"[AAI] Transcript create: {resp.status_code} — {resp.text[:200]}")
