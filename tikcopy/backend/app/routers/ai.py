@@ -11,6 +11,7 @@ do editor de copy.
 import json
 import logging
 import os
+import re
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
@@ -97,6 +98,7 @@ class WriterContext(BaseModel):
     meta: Optional[dict] = None           # ads_number, angle, format, avatar, etc.
     current_hooks: Optional[list[str]] = None
     current_body: Optional[str] = None
+    reference: Optional[dict] = None      # anúncio de referência selecionado pra MODELAR {title, niche, content}
     boost: bool = False                   # liga o modelo premium (Opus) nas gerações de copy
 
 
@@ -127,6 +129,21 @@ class ChatRequest(WriterContext):
 def _build_context_block(ctx: WriterContext) -> str:
     """Monta um bloco de texto com o contexto atual da copy pra IA usar."""
     parts = []
+    # Referência selecionada pra MODELAR — vai PRIMEIRO e com destaque máximo.
+    if ctx.reference and isinstance(ctx.reference, dict):
+        ref_content = (ctx.reference.get("content") or "").strip()
+        if ref_content:
+            ref_title = ctx.reference.get("title") or "Anúncio de referência"
+            ref_niche = ctx.reference.get("niche")
+            head = f"ANÚNCIO DE REFERÊNCIA PARA MODELAR — \"{ref_title}\""
+            if ref_niche:
+                head += f" (nicho: {ref_niche})"
+            parts.append(
+                head + "\n"
+                "Modele a ESTRUTURA, o RITMO e o estilo de gancho/CTA deste anúncio validado, "
+                "adaptando para a oferta atual. NÃO copie literalmente o tema/produto dele; "
+                "use-o como molde de execução.\n\n" + ref_content
+            )
     if ctx.meta:
         meta_lines = [f"- {k}: {v}" for k, v in ctx.meta.items() if v]
         if meta_lines:
@@ -366,27 +383,46 @@ def _get_niche_research(user_id: str, niche: Optional[str], limit: int = 5) -> l
         return []
 
 
-def _get_project_memory(project_id: Optional[str], limit: int = 4) -> list[dict]:
-    """Transcrições/análises da memória do projeto. {title, content}."""
+def _relevance_words(text: str) -> set:
+    """Palavras significativas (>=4 letras) pra medir sobreposição de relevância."""
+    return set(re.findall(r"[a-zá-úà-ãâêôçü]{4,}", (text or "").lower()))
+
+
+def _get_project_memory(project_id: Optional[str], query: str = "", limit: int = 4) -> list[dict]:
+    """Transcrições/análises da memória do projeto, RANKEADAS por relevância ao que
+    está sendo escrito agora (`query`). Sem query → as mais recentes. {title, content}."""
     if not project_id:
         return []
     try:
         sb = get_supabase()
         res = (
             sb.table("project_memory")
-            .select("type, content, metadata")
+            .select("type, content, metadata, created_at")
             .eq("project_id", project_id)
             .eq("active", True)
-            .limit(limit)
+            .order("created_at", desc=True)
+            .limit(40)                      # pool maior pra rankear em memória
             .execute()
         )
-        out = []
+        items = []
         for r in (res.data or []):
             content = (r.get("content") or "").strip()
             if content:
                 meta = r.get("metadata") or {}
-                out.append({"title": meta.get("title") or r.get("type"), "content": content})
-        return out
+                items.append({"title": meta.get("title") or r.get("type"), "content": content})
+
+        q_words = _relevance_words(query)
+        if not q_words:
+            return items[:limit]            # nada escrito ainda → mais recentes
+
+        def score(it):
+            return len(q_words & _relevance_words(it["title"] + " " + it["content"]))
+
+        ranked = sorted(items, key=score, reverse=True)
+        # Se nada tem relação com o que está sendo escrito, volta pra recência
+        if not ranked or score(ranked[0]) == 0:
+            return items[:limit]
+        return ranked[:limit]
     except Exception:
         return []
 
@@ -554,7 +590,16 @@ async def suggest_field(body: SuggestFieldRequest, current_user=Depends(get_curr
             }
 
         research = _get_niche_research(current_user.id, niche)
-        memory = _get_project_memory(body.project_id)
+        # Relevância: rankeia a memória pelo que está em jogo agora (hooks/body/ângulo/ref/nicho)
+        mem_query = " ".join(filter(None, [
+            " ".join(body.current_hooks or []),
+            body.current_body or "",
+            organic_base,
+            (body.meta or {}).get("angle") or "",
+            ((body.reference or {}).get("content") or ""),
+            niche or "",
+        ]))
+        memory = _get_project_memory(body.project_id, query=mem_query)
         instructions = _get_combined_instructions(current_user.id, project.get("instructions"))
 
         # Monta args específicos por estratégia (com gating onde faz sentido).

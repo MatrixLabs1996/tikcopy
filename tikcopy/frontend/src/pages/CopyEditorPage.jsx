@@ -1118,6 +1118,12 @@ export default function CopyEditorPage() {
     meta,
     current_hooks: (hooks || []).map(h => stripHtml(h.html || '')).filter(Boolean),
     current_body: stripHtml(body || ''),
+    // Referência selecionada no painel → a IA modela este anúncio (estrutura/ritmo).
+    reference: selectedRef ? {
+      title: selectedRef.metadata?.title || selectedRef.title || null,
+      niche: selectedRef.metadata?.niche || null,
+      content: selectedRef.content || '',
+    } : null,
     // Boost (Opus) só pode ir ligado se a UI do Boost estiver habilitada. Sem isso,
     // um valor `true` antigo salvo no localStorage usaria Opus sem o usuário saber.
     boost: BOOST_UI_ENABLED && boostOn,
