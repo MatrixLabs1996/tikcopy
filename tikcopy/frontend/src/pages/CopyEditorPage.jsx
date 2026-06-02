@@ -1032,8 +1032,6 @@ export default function CopyEditorPage() {
   const [showAvatarImport, setShowAvatarImport] = useState(false)
   const [showAdRefImport, setShowAdRefImport] = useState(false)
   const [hooksOpen, setHooksOpen] = useState(false)
-  const [researches, setResearches] = useState([])
-  const [showResearchPicker, setShowResearchPicker] = useState(false)
   const [showOrganicSwipePicker, setShowOrganicSwipePicker] = useState(false)
 
   // Modo de escrita: manual | hibrido | auto. Persiste entre sessões.
@@ -1144,10 +1142,6 @@ export default function CopyEditorPage() {
     }
   }
 
-  // Carrega briefings pra o seletor de "Acessar briefing"
-  useEffect(() => {
-    api.get('/briefings').then(r => setResearches(r.data || [])).catch(() => setResearches([]))
-  }, [])
 
   // Referências do projeto (transcrições orgânicas + ads)
   const [allMemory, setAllMemory] = useState([])
@@ -1667,57 +1661,6 @@ export default function CopyEditorPage() {
             >
               <Plus size={12} /> Novo
             </button>
-            {/* Acessar pesquisa — botão avulso (independente do briefing) */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowResearchPicker((v) => !v)}
-                title="Abrir um briefing salvo em outra aba"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '5px',
-                  padding: '8px 12px', borderRadius: '7px', fontSize: '12px',
-                  background: 'transparent', border: '1px solid #8b5cf6',
-                  color: '#8b5cf6', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
-                }}
-              >
-                <BookOpen size={12} /> Acessar briefing
-                <ChevronDown size={10} />
-              </button>
-              {showResearchPicker && (
-                <div style={{
-                  position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 50,
-                  background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
-                  borderRadius: '8px', minWidth: '260px', maxHeight: '320px', overflowY: 'auto',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-                }}>
-                  {researches.length === 0 ? (
-                    <div style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                      Nenhum briefing salvo ainda.<br/>
-                      <a href="/briefings" target="_blank" rel="noreferrer" style={{ color: '#8b5cf6' }}>Criar briefing →</a>
-                    </div>
-                  ) : researches.map((r) => (
-                    <button
-                      key={r.id}
-                      onClick={() => {
-                        window.open(`/briefings/${r.id}/view`, '_blank')
-                        setShowResearchPicker(false)
-                      }}
-                      style={{
-                        width: '100%', textAlign: 'left', padding: '9px 14px',
-                        background: 'transparent', border: 'none', cursor: 'pointer',
-                        fontFamily: 'var(--font)', fontSize: '12px', color: 'var(--text-primary)',
-                        borderBottom: '1px solid var(--border-subtle)',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <div style={{ fontWeight: 600 }}>{r.title}</div>
-                      {r.market && <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>{r.market}</div>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Toggle do painel de referência */}
             <button
               onClick={() => setAiOpen((v) => !v)}
