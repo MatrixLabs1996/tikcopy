@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Loader2, CheckCircle2, AlertCircle, X, ChevronDown, ChevronUp, Activity } from 'lucide-react'
 import useJobsStore, { isActive, pollActiveJobs } from '../stores/useJobsStore'
 import { STATUS_LABELS } from '../hooks/useTranscriptionJob'
+
+// Pra onde cada tipo de processo leva ao clicar no dock
+const ROUTE_BY_KIND = {
+  organic: '/organic', ad: '/ads', vsl: '/vsl', lesson: '/lessons', profile: '/raio-x',
+}
 
 /**
  * Barra flutuante (canto inferior direito) que mostra TODAS as transcrições
@@ -14,6 +20,12 @@ export default function TranscriptionDock() {
   const clearDone = useJobsStore((s) => s.clearDone)
   const [collapsed, setCollapsed] = useState(false)
   const intervalRef = useRef(null)
+  const navigate = useNavigate()
+
+  const goToJob = (j) => {
+    const route = ROUTE_BY_KIND[j.kind]
+    if (route) navigate(route)
+  }
 
   const active = jobs.filter(isActive)
   const done = jobs.filter((j) => j.status === 'done')
@@ -66,7 +78,7 @@ export default function TranscriptionDock() {
           }
           <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
             {active.length > 0
-              ? `Transcrevendo ${active.length} ${active.length === 1 ? 'vídeo' : 'vídeos'}…`
+              ? `Processando ${active.length} ${active.length === 1 ? 'item' : 'itens'}…`
               : `${done.length} concluído${done.length !== 1 ? 's' : ''}`}
           </span>
         </div>
@@ -97,7 +109,11 @@ export default function TranscriptionDock() {
                 {j.status === 'error' && <AlertCircle size={14} style={{ color: 'var(--accent)' }} />}
                 {isActive(j) && <Loader2 size={14} style={{ color: 'var(--accent)', animation: 'spin 0.9s linear infinite' }} />}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                onClick={() => goToJob(j)}
+                title={ROUTE_BY_KIND[j.kind] ? 'Abrir na página do processo' : undefined}
+                style={{ flex: 1, minWidth: 0, cursor: ROUTE_BY_KIND[j.kind] ? 'pointer' : 'default' }}
+              >
                 <div style={{
                   fontSize: '12px', color: 'var(--text-primary)', whiteSpace: 'nowrap',
                   overflow: 'hidden', textOverflow: 'ellipsis',
