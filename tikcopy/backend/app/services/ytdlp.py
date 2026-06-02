@@ -92,7 +92,9 @@ def _bootstrap_cookies_from_env():
             # aceita \n escapado (caso a env venha numa linha só)
             content = raw.replace("\\n", "\n")
             COOKIES_FILE.write_text(content, encoding="utf-8")
-            logger.info(f"[ytdlp] cookies.txt gravado a partir de YOUTUBE_COOKIES ({len(content)} chars)")
+            logger.warning(f"[ytdlp] cookies.txt gravado a partir de YOUTUBE_COOKIES ({len(content)} chars)")
+    else:
+        logger.warning("[ytdlp] YOUTUBE_COOKIES nao setado — download do YouTube sem cookies")
         except Exception as exc:
             logger.warning(f"[ytdlp] falha ao gravar cookies do env: {exc}")
 
