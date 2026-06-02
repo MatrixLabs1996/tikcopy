@@ -80,6 +80,7 @@ def _run_profile_pipeline(job_id: str, url: str, top_n: int, niche: str | None, 
 
         # ── 2. Baixar + transcrever só os top ──
         analyzed = []
+        fail_reasons = []
         for idx, v in enumerate(top, 1):
             _jobs[job_id] = {
                 "status": "transcribing",
@@ -123,12 +124,18 @@ def _run_profile_pipeline(job_id: str, url: str, top_n: int, niche: str | None, 
                     "transcript": transcript_paragraphed,
                     "top_comments": [],
                 })
-            except Exception:
+            except Exception as exc:
                 # Vídeo que falhar (bloqueio/privado) é pulado — não derruba o job
+                logger.warning(f"[raiox] vídeo {idx} falhou: {exc}")
+                fail_reasons.append(str(exc))
                 continue
 
         if not analyzed:
-            raise ValueError("Não consegui baixar/transcrever nenhum dos vídeos virais (podem estar bloqueados).")
+            detail = (fail_reasons[0][:200] if fail_reasons else "")
+            raise ValueError(
+                "Não consegui transcrever nenhum dos vídeos virais. "
+                + (f"Motivo: {detail}" if detail else "Eles podem estar bloqueados ou sem legenda.")
+            )
 
         # ── 3. Comentários (voz da audiência) — lê TUDO (paginado, com teto) ──
         comment_pool = []

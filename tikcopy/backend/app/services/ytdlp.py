@@ -53,7 +53,7 @@ def fetch_youtube_transcript(url: str) -> str | None:
         text = " ".join((s.get('text') or '').strip() for s in segs).strip()
         return text or None
     except Exception as exc:
-        logger.info(f"[ytdlp] sem legenda pra {vid}: {exc}")
+        logger.warning(f"[ytdlp] legenda indisponível pra {vid}: {type(exc).__name__}: {exc}")
         return None
 
 TEMP_DIR = Path(__file__).parent.parent.parent / "temp"
