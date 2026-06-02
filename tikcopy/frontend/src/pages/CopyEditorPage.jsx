@@ -558,7 +558,7 @@ function LabeledReference({ structureGuide }) {
   )
 }
 
-function ReferencePanel({ memoryItems, finalDrafts, selected, onSelect, onClear, onRefresh, refreshing, structureGuide }) {
+function ReferencePanel({ memoryItems, finalDrafts, selected, onSelect, onClear, onRefresh, refreshing, structureGuide, organicBase }) {
   const [filter, setFilter] = useState('organic')
   const [nicheFilter, setNicheFilter] = useState('')   // '' = todos os nichos
   const hasStructure = !!(structureGuide && (structureGuide.body || []).length > 0)
@@ -719,10 +719,20 @@ function ReferencePanel({ memoryItems, finalDrafts, selected, onSelect, onClear,
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px' }}>
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '40px', lineHeight: 1.6 }}>
-          Escolha uma referência acima<br />
-          pra ter ela do lado enquanto escreve.
-        </div>
+        {organicBase && organicBase.trim() ? (
+          <>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '8px' }}>
+              🎬 Vídeo da Comunicação
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+              {organicBase}
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '40px', lineHeight: 1.6 }}>
+            Escolha uma referência acima,<br />ou preencha a Comunicação no Briefing<br />pra ler o vídeo aqui enquanto escreve.
+          </div>
+        )}
       </div>
     </div>
   )
@@ -745,64 +755,77 @@ function buildSwipeOrganicMarkdown(c) {
 
 // ─── RightPanel: alterna entre Chat IA (modo Híbrido) e Referência ────────
 
-function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelectedRef, loadAllMemory, refLoading, buildAIContext, chatKey, structureGuide }) {
-  // Modo Híbrido: tab "Chat IA" como padrão, mas pode trocar pra Referência.
-  // Persiste a aba escolhida ao sair/voltar da página.
+function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelectedRef, loadAllMemory, refLoading, buildAIContext, chatKey, structureGuide, organicBase }) {
   const [tab, setTab] = usePersistedState('copyEditor:rightTab', writeMode === 'hibrido' ? 'chat' : 'ref')
 
-  // Quando sai do modo Híbrido, força tab Referência
+  // Conceito do Brainstorm está ocupando a referência? Ganha aba própria.
+  const hasBrainstorm = selectedRef?.metadata?.source === 'brainstorm'
+  // O seletor de anúncio não enxerga o conceito do brainstorm (ele vive na aba dele).
+  const swipeSelected = hasBrainstorm ? null : selectedRef
+
+  // Volta pra Referência se a aba ativa deixou de existir.
   useEffect(() => {
     if (writeMode !== 'hibrido' && tab === 'chat') setTab('ref')
   }, [writeMode]) // eslint-disable-line
+  useEffect(() => {
+    if (!hasBrainstorm && tab === 'brainstorm') setTab('ref')
+  }, [hasBrainstorm]) // eslint-disable-line
+
+  const showTabs = writeMode === 'hibrido' || hasBrainstorm
+  const TabBtn = ({ id, label, color }) => (
+    <button
+      onClick={() => setTab(id)}
+      style={{
+        flex: 1, padding: '10px 12px', fontSize: '12px', fontWeight: 600,
+        background: tab === id ? 'var(--bg-surface)' : 'transparent',
+        color: tab === id ? color : 'var(--text-muted)',
+        border: 'none', borderBottom: `2px solid ${tab === id ? color : 'transparent'}`,
+        cursor: 'pointer', fontFamily: 'var(--font)',
+      }}
+    >
+      {label}
+    </button>
+  )
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Tabs (só aparece no modo Híbrido — nos outros, só mostra Referência) */}
-      {writeMode === 'hibrido' && (
-        <div style={{
-          display: 'flex', borderBottom: '1px solid var(--border-default)',
-          flexShrink: 0, background: 'var(--bg-elevated)',
-        }}>
-          <button
-            onClick={() => setTab('chat')}
-            style={{
-              flex: 1, padding: '10px 12px', fontSize: '12px', fontWeight: 600,
-              background: tab === 'chat' ? 'var(--bg-surface)' : 'transparent',
-              color: tab === 'chat' ? '#8b5cf6' : 'var(--text-muted)',
-              border: 'none', borderBottom: `2px solid ${tab === 'chat' ? '#8b5cf6' : 'transparent'}`,
-              cursor: 'pointer', fontFamily: 'var(--font)',
-            }}
-          >
-            ✨ Chat IA
-          </button>
-          <button
-            onClick={() => setTab('ref')}
-            style={{
-              flex: 1, padding: '10px 12px', fontSize: '12px', fontWeight: 600,
-              background: tab === 'ref' ? 'var(--bg-surface)' : 'transparent',
-              color: tab === 'ref' ? 'var(--accent)' : 'var(--text-muted)',
-              border: 'none', borderBottom: `2px solid ${tab === 'ref' ? 'var(--accent)' : 'transparent'}`,
-              cursor: 'pointer', fontFamily: 'var(--font)',
-            }}
-          >
-            📖 Referência
-          </button>
+      {showTabs && (
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-default)', flexShrink: 0, background: 'var(--bg-elevated)' }}>
+          {writeMode === 'hibrido' && <TabBtn id="chat" label="✨ Chat IA" color="#8b5cf6" />}
+          <TabBtn id="ref" label="📖 Referência" color="var(--accent)" />
+          {hasBrainstorm && <TabBtn id="brainstorm" label="✦ Brainstorm" color="#f43f5e" />}
         </div>
       )}
 
       <div style={{ flex: 1, minHeight: 0 }}>
-        {tab === 'chat' ? (
+        {tab === 'chat' && writeMode === 'hibrido' ? (
           <ChatPanel buildContext={buildAIContext} chatKey={chatKey} />
+        ) : tab === 'brainstorm' && hasBrainstorm ? (
+          <div style={{ height: '100%', overflowY: 'auto', padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#f43f5e', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                ✦ Conceito do Brainstorm
+              </div>
+              <button
+                onClick={() => setSelectedRef(null)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}
+              >
+                <X size={11} /> Remover
+              </button>
+            </div>
+            <Markdown>{selectedRef.content}</Markdown>
+          </div>
         ) : (
           <ReferencePanel
             memoryItems={memoryItems}
             finalDrafts={finalDrafts}
-            selected={selectedRef}
+            selected={swipeSelected}
             onSelect={setSelectedRef}
             onClear={() => setSelectedRef(null)}
             onRefresh={loadAllMemory}
             refreshing={refLoading}
             structureGuide={structureGuide}
+            organicBase={organicBase}
           />
         )}
       </div>
@@ -1950,6 +1973,7 @@ export default function CopyEditorPage() {
             buildAIContext={buildAIContext}
             chatKey={persistKey}
             structureGuide={writeMode === 'manual' ? structureGuide : null}
+            organicBase={stripHtml(briefing?.organic_base || '')}
           />
         </aside>
       )}
