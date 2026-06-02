@@ -99,7 +99,7 @@ export default function BrainstormPage() {
   }
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 28px' }}>
+    <div style={{ width: '100%', padding: '24px 32px', boxSizing: 'border-box' }}>
       <style>{`.tc-spin { animation: spin 0.8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
