@@ -53,6 +53,17 @@ function _digitsToClock(raw) {
   const mm = (d.slice(0, -2) || '0').padStart(2, '0')
   return `${mm}:${ss}`
 }
+// Normaliza qualquer valor salvo (inclusive o antigo "3.5" em minutos decimais)
+// pro display do timer "mm:ss". Vazio → "".
+function _normalizeTargetDisplay(v) {
+  const s = String(v || '').trim()
+  if (!s) return ''
+  const sec = _parseTargetSec(s)
+  if (!sec) return ''
+  const mm = Math.floor(sec / 60)
+  const ss = sec % 60
+  return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+}
 // Aceita "mm:ss" / "hh:mm:ss" (ou número puro = minutos) e devolve segundos.
 function _parseTargetSec(str) {
   const t = String(str || '').trim()
@@ -117,7 +128,7 @@ function BodyTimeMeter({ body, stripHtml, targetMin, onChangeTarget }) {
         </button>
         <input
           type="text" inputMode="numeric" placeholder="00:00"
-          value={targetMin || ''}
+          value={_normalizeTargetDisplay(targetMin)}
           onChange={(e) => onChangeTarget(_digitsToClock(e.target.value))}
           style={{
             width: '72px', padding: '4px 8px', borderRadius: '6px', fontSize: '13px',
