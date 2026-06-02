@@ -14,25 +14,25 @@ import usePersistedState, { clearPersistedKeys } from '../hooks/usePersistedStat
 // ── RMBC block metadata ─────────────────────────────────────────
 const RMBC_BLOCKS = [
   { key: 'bloco1', label: 'Bloco 1 — Identificação Geral', color: '#6366f1' },
-  { key: 'bloco2', label: 'Bloco 2 — Big Idea', color: '#8b5cf6' },
-  { key: 'bloco3', label: 'Bloco 3 — Lead (10 elementos)', color: '#ec4899' },
-  { key: 'bloco4', label: 'Bloco 4 — Headline', color: '#f59e0b' },
+  { key: 'bloco2', label: 'Bloco 2 — Big Idea', color: 'var(--accent)' },
+  { key: 'bloco3', label: 'Bloco 3 — Lead (10 elementos)', color: 'var(--accent)' },
+  { key: 'bloco4', label: 'Bloco 4 — Headline', color: 'var(--accent)' },
   { key: 'bloco5', label: 'Bloco 5 — Background Story', color: '#10b981' },
-  { key: 'bloco6', label: 'Bloco 6 — Mecanismo', color: '#06b6d4' },
+  { key: 'bloco6', label: 'Bloco 6 — Mecanismo', color: 'var(--accent)' },
   { key: 'bloco7', label: 'Bloco 7 — Apresentação do Produto', color: '#3b82f6' },
   { key: 'bloco8', label: 'Bloco 8 — Fechamento', color: '#f97316' },
-  { key: 'bloco9', label: 'Bloco 9 — Pontos Fortes', color: '#22c55e' },
+  { key: 'bloco9', label: 'Bloco 9 — Pontos Fortes', color: 'var(--success-text)' },
   { key: 'bloco10', label: 'Bloco 10 — Pontos Fracos e Oportunidades', color: '#ef4444' },
   { key: 'bloco11', label: 'Bloco 11 — Extração de Swipes', color: '#a855f7' },
 ]
 
 const COMPARE_SECTIONS = [
   { key: 'resumo_executivo', label: 'Resumo Executivo', color: '#6366f1' },
-  { key: 'camada1', label: 'Camada 1 — Padrões Universais do Nicho', color: '#8b5cf6' },
-  { key: 'camada2', label: 'Camada 2 — Padrões Regionais e Culturais', color: '#ec4899' },
-  { key: 'camada3', label: 'Camada 3 — Diferenças de Abordagem', color: '#f59e0b' },
+  { key: 'camada1', label: 'Camada 1 — Padrões Universais do Nicho', color: 'var(--accent)' },
+  { key: 'camada2', label: 'Camada 2 — Padrões Regionais e Culturais', color: 'var(--accent)' },
+  { key: 'camada3', label: 'Camada 3 — Diferenças de Abordagem', color: 'var(--accent)' },
   { key: 'camada4_vsl1', label: 'Camada 4 — Pitada Mágica VSL 1', color: '#10b981' },
-  { key: 'camada4_vsl2', label: 'Camada 4 — Pitada Mágica VSL 2', color: '#06b6d4' },
+  { key: 'camada4_vsl2', label: 'Camada 4 — Pitada Mágica VSL 2', color: 'var(--accent)' },
   { key: 'recomendacoes', label: 'Recomendações Estratégicas', color: '#f97316' },
 ]
 
@@ -119,7 +119,7 @@ function AnalysisResult({ result, projectId }) {
             onClick={handleSaveToMemory}
             disabled={savingMemory}
             title={projectId ? 'Salvar análise na memória do projeto' : 'Selecione um projeto primeiro'}
-            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 11px', borderRadius: '6px', fontSize: '12px', background: '#8b5cf6', border: '1px solid #8b5cf6', color: '#fff', cursor: savingMemory ? 'wait' : 'pointer', fontFamily: 'var(--font)', opacity: projectId ? 1 : 0.5 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 11px', borderRadius: '6px', fontSize: '12px', background: 'var(--accent)', border: '1px solid var(--accent)', color: '#fff', cursor: savingMemory ? 'wait' : 'pointer', fontFamily: 'var(--font)', opacity: projectId ? 1 : 0.5 }}
           >
             <Brain size={12} /> {savingMemory ? 'Salvando...' : 'Salvar na Inteligência'}
           </button>
@@ -178,7 +178,7 @@ function CompareResult({ result }) {
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px',
       }}>
-        {[{ v: vsl1, color: '#10b981' }, { v: vsl2, color: '#06b6d4' }].map(({ v, color }) => (
+        {[{ v: vsl1, color: '#10b981' }, { v: vsl2, color: 'var(--accent)' }].map(({ v, color }) => (
           <div key={v.name} className="tc-card" style={{ borderLeft: `3px solid ${color}` }}>
             <div style={{ fontSize: '11px', color, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>
               {v.name}
@@ -266,7 +266,7 @@ const BatchVSLRow = memo(function BatchVSLRow({ item, projectId, onDone }) {
         }}
       >
         <div style={{ flexShrink: 0 }}>
-          {isDone && <CheckCircle2 size={16} style={{ color: '#22c55e' }} />}
+          {isDone && <CheckCircle2 size={16} style={{ color: 'var(--success-text)' }} />}
           {isError && <AlertCircle size={16} style={{ color: 'var(--accent)' }} />}
           {isRunning && <Loader2 size={16} style={{ color: 'var(--accent)', animation: 'spin 0.8s linear infinite' }} />}
         </div>
@@ -410,7 +410,7 @@ function BatchMode({ activeProject, niche, translate }) {
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
               Fila — {queue.length} VSL{queue.length > 1 ? 's' : ''}
               {doneCount > 0 && (
-                <span style={{ marginLeft: '6px', fontSize: '11px', color: '#22c55e', fontWeight: 400 }}>
+                <span style={{ marginLeft: '6px', fontSize: '11px', color: 'var(--success-text)', fontWeight: 400 }}>
                   ({doneCount} concluída{doneCount > 1 ? 's' : ''})
                 </span>
               )}
@@ -543,7 +543,7 @@ function CompareTab() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
           {[
             { label: 'VSL 1', name: name1, setName: setName1, text: text1, setText: setText1, color: '#10b981' },
-            { label: 'VSL 2', name: name2, setName: setName2, text: text2, setText: setText2, color: '#06b6d4' },
+            { label: 'VSL 2', name: name2, setName: setName2, text: text2, setText: setText2, color: 'var(--accent)' },
           ].map(({ label, name, setName, text, setText, color }) => (
             <div key={label} style={{
               border: `1px solid var(--border-default)`,

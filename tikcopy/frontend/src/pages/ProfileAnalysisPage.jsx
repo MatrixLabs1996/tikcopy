@@ -32,7 +32,7 @@ function VideoRow({ video, videoIndex, checked, onToggle, selectedComments, onTo
   return (
     <div style={{
       border: '1px solid var(--border-default)', borderRadius: '9px',
-      background: checked ? 'rgba(6,182,212,0.06)' : 'var(--bg-elevated)',
+      background: checked ? 'rgba(255,62,94,0.06)' : 'var(--bg-elevated)',
       transition: 'background 0.12s', overflow: 'hidden',
     }}>
       <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '12px 14px', cursor: 'pointer' }}>
@@ -65,7 +65,7 @@ function VideoRow({ video, videoIndex, checked, onToggle, selectedComments, onTo
             {m.views && m.views !== '—' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Eye size={11} /> {m.views}</span>}
             {m.likes && m.likes !== '—' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Heart size={11} /> {m.likes}</span>}
             {m.published && m.published !== '—' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }} title="Data de postagem"><Calendar size={11} /> {m.published}</span>}
-            {video.velocity > 0 && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#06b6d4', fontWeight: 600 }} title="Views por dia (em alta)"><TrendingUp size={11} /> {Number(video.velocity).toLocaleString('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })}/dia</span>}
+            {video.velocity > 0 && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--accent)', fontWeight: 600 }} title="Views por dia (em alta)"><TrendingUp size={11} /> {Number(video.velocity).toLocaleString('pt-BR', { notation: 'compact', maximumFractionDigits: 1 })}/dia</span>}
             {(video.comment_count || comments.length) > 0 && <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><MessageSquare size={11} /> {(video.comment_count || comments.length).toLocaleString('pt-BR')} comentários lidos</span>}
           </div>
           {video.hook && (
@@ -94,7 +94,7 @@ function VideoRow({ video, videoIndex, checked, onToggle, selectedComments, onTo
             }}
           >
             <MessageSquare size={12} /> {showComments ? 'Ocultar' : 'Ver e selecionar'} comentários
-            {selCount > 0 && <span style={{ color: '#06b6d4', fontWeight: 600 }}>· {selCount} marcado{selCount > 1 ? 's' : ''}</span>}
+            {selCount > 0 && <span style={{ color: 'var(--accent)', fontWeight: 600 }}>· {selCount} marcado{selCount > 1 ? 's' : ''}</span>}
           </button>
           {showComments && (
             <div style={{ padding: '0 14px 12px' }}>
@@ -121,8 +121,8 @@ function VideoRow({ video, videoIndex, checked, onToggle, selectedComments, onTo
                     <label key={ci} style={{
                       display: 'flex', gap: '8px', alignItems: 'flex-start', cursor: 'pointer',
                       padding: '6px 8px', borderRadius: '6px',
-                      background: isSel ? 'rgba(6,182,212,0.08)' : 'transparent',
-                      borderLeft: `2px solid ${isSel ? '#06b6d4' : 'var(--border-default)'}`,
+                      background: isSel ? 'rgba(255,62,94,0.08)' : 'transparent',
+                      borderLeft: `2px solid ${isSel ? 'var(--accent)' : 'var(--border-default)'}`,
                     }}>
                       <input type="checkbox" checked={isSel} onChange={() => onToggleComment(videoIndex, ci, c, video.title)} style={{ marginTop: '2px', cursor: 'pointer' }} />
                       <div style={{ flex: 1, minWidth: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
@@ -450,7 +450,7 @@ export default function ProfileAnalysisPage() {
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: running ? 'not-allowed' : 'pointer', userSelect: 'none' }}>
           <div
             onClick={() => !running && setIncludeComments((v) => !v)}
-            style={{ width: '36px', height: '20px', borderRadius: '999px', background: includeComments ? '#06b6d4' : 'var(--border-strong)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}
+            style={{ width: '36px', height: '20px', borderRadius: '999px', background: includeComments ? 'var(--accent)' : 'var(--border-strong)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}
           >
             <div style={{ position: 'absolute', top: '3px', left: includeComments ? '18px' : '3px', width: '14px', height: '14px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
           </div>
@@ -516,8 +516,8 @@ export default function ProfileAnalysisPage() {
                 borderRadius: '7px', fontSize: '12px', fontFamily: 'var(--font)',
                 cursor: savedDoc ? 'default' : 'pointer',
                 background: 'transparent',
-                border: `1px solid ${savedDoc ? '#22c55e' : 'var(--border-default)'}`,
-                color: savedDoc ? '#22c55e' : 'var(--text-secondary)',
+                border: `1px solid ${savedDoc ? 'var(--success-text)' : 'var(--border-default)'}`,
+                color: savedDoc ? 'var(--success-text)' : 'var(--text-secondary)',
               }}
             >
               {savedDoc ? <><Check size={13} /> Salvo em Pesquisas</> : <><Save size={13} /> {savingDoc ? 'Salvando…' : 'Salvar em Pesquisas'}</>}
@@ -558,11 +558,11 @@ export default function ProfileAnalysisPage() {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
                   padding: '10px 14px', marginBottom: '12px', borderRadius: '9px',
-                  background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.25)',
+                  background: 'rgba(255,62,94,0.06)', border: '1px solid rgba(255,62,94,0.25)',
                 }}>
-                  <MessageSquare size={14} style={{ color: '#06b6d4' }} />
+                  <MessageSquare size={14} style={{ color: 'var(--accent)' }} />
                   <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    <strong style={{ color: '#06b6d4' }}>{commentSelCount}</strong> comentário{commentSelCount > 1 ? 's' : ''} selecionado{commentSelCount > 1 ? 's' : ''}
+                    <strong style={{ color: 'var(--accent)' }}>{commentSelCount}</strong> comentário{commentSelCount > 1 ? 's' : ''} selecionado{commentSelCount > 1 ? 's' : ''}
                   </span>
                   <button
                     onClick={applyCommentsToDoc}

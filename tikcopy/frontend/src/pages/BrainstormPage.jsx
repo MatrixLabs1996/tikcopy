@@ -12,7 +12,7 @@ function parseContent(s) {
   try { return typeof s.content === 'string' ? JSON.parse(s.content) : (s.content || {}) } catch { return {} }
 }
 
-const PROB_COLOR = { 'Alta': '#22c55e', 'Média': '#f59e0b', 'Exploratória': '#8b5cf6' }
+const PROB_COLOR = { 'Alta': 'var(--success-text)', 'Média': 'var(--accent)', 'Exploratória': 'var(--accent)' }
 
 export default function BrainstormPage() {
   const activeProject = useAppStore((s) => s.activeProject)
@@ -154,7 +154,7 @@ export default function BrainstormPage() {
                     <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                       {a._c.title || 'Anúncio'}
                       {a._c.niche && <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400 }}> · {a._c.niche}</span>}
-                      {has7 && <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 600, marginLeft: '6px' }}>7 camadas ✓</span>}
+                      {has7 && <span style={{ fontSize: '10px', color: 'var(--success-text)', fontWeight: 600, marginLeft: '6px' }}>7 camadas ✓</span>}
                     </div>
                     {hook && <div style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{hook}</div>}
                   </div>
@@ -187,8 +187,8 @@ export default function BrainstormPage() {
           </div>
           {/* Padrões */}
           {result.padroes && (
-            <div className="tc-card" style={{ padding: '16px', borderLeft: '3px solid #22c55e' }}>
-              <SectionHead icon={TrendingUp} color="#22c55e" label="Padrões observados (o que se repete)" />
+            <div className="tc-card" style={{ padding: '16px', borderLeft: '3px solid var(--success-text)' }}>
+              <SectionHead icon={TrendingUp} color="var(--success-text)" label="Padrões observados (o que se repete)" />
               {result.padroes.resumo && <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '10px' }}>{result.padroes.resumo}</p>}
               <Chips label="Portas usadas" items={result.padroes.portas_usadas} />
               <Chips label="Estruturas" items={result.padroes.estruturas} />
@@ -201,8 +201,8 @@ export default function BrainstormPage() {
 
           {/* Lacunas */}
           {result.lacunas && (
-            <div className="tc-card" style={{ padding: '16px', borderLeft: '3px solid #f59e0b' }}>
-              <SectionHead icon={DoorOpen} color="#f59e0b" label="Lacunas (leilões limpos a explorar)" />
+            <div className="tc-card" style={{ padding: '16px', borderLeft: '3px solid var(--accent)' }}>
+              <SectionHead icon={DoorOpen} color="var(--accent)" label="Lacunas (leilões limpos a explorar)" />
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{result.lacunas}</p>
             </div>
           )}
@@ -240,7 +240,7 @@ export default function BrainstormPage() {
                 <button
                   onClick={runCouncil}
                   disabled={councilLoading}
-                  style={{ marginTop: '16px', width: '100%', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, background: 'rgba(139,92,246,0.1)', border: '1px solid #8b5cf6', color: '#8b5cf6', cursor: councilLoading ? 'wait' : 'pointer', fontFamily: 'var(--font)' }}
+                  style={{ marginTop: '16px', width: '100%', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, background: 'rgba(255,62,94,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: councilLoading ? 'wait' : 'pointer', fontFamily: 'var(--font)' }}
                 >
                   {councilLoading ? <><Loader2 size={15} className="tc-spin" /> Conselho debatendo…</> : <><Scale size={15} /> Passar pelo conselho dos 5</>}
                 </button>
@@ -257,27 +257,27 @@ export default function BrainstormPage() {
 
 function CouncilVerdict({ council }) {
   return (
-    <div style={{ marginTop: '20px', border: '1px solid #8b5cf6', borderRadius: '10px', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'rgba(139,92,246,0.08)', borderBottom: '1px solid rgba(139,92,246,0.3)' }}>
-        <Scale size={16} style={{ color: '#8b5cf6' }} />
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#8b5cf6' }}>Veredito do Conselho dos 5</span>
+    <div style={{ marginTop: '20px', border: '1px solid var(--accent)', borderRadius: '10px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'rgba(255,62,94,0.08)', borderBottom: '1px solid rgba(255,62,94,0.3)' }}>
+        <Scale size={16} style={{ color: 'var(--accent)' }} />
+        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>Veredito do Conselho dos 5</span>
       </div>
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {council.veredito && (
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.6, padding: '12px 14px', background: 'var(--bg-elevated)', borderRadius: '8px', borderLeft: '3px solid #8b5cf6' }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.6, padding: '12px 14px', background: 'var(--bg-elevated)', borderRadius: '8px', borderLeft: '3px solid var(--accent)' }}>
             {council.veredito}
           </div>
         )}
 
         {(council.top_apostas || []).length > 0 && (
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#22c55e', marginBottom: '8px' }}>🎯 Apostas do conselho</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--success-text)', marginBottom: '8px' }}>Apostas do conselho</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {council.top_apostas.map((a, i) => (
                 <div key={i} style={{ border: '1px solid var(--border-default)', borderRadius: '8px', padding: '12px 14px', background: 'var(--bg-surface)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
                     <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>{a.conceito}</span>
-                    {a.nota && <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', color: '#22c55e', border: '1px solid #22c55e' }}>{a.nota}</span>}
+                    {a.nota && <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', color: 'var(--success-text)', border: '1px solid var(--success-text)' }}>{a.nota}</span>}
                   </div>
                   {a.por_que && <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '8px' }}>{a.por_que}</div>}
                   {(a.lentes || []).map((l, j) => (
@@ -308,7 +308,7 @@ function CouncilVerdict({ council }) {
 
         {(council.ajustes || []).length > 0 && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f59e0b', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent)', marginBottom: '8px' }}>
               <Wrench size={13} /> Ajustes sugeridos
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

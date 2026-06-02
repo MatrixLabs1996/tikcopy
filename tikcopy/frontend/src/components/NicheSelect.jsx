@@ -50,7 +50,7 @@ export default function NicheSelect({ value, onChange, placeholder = 'Selecione 
         <button
           type="button"
           onClick={() => { if (custom.trim()) commit(custom.trim()) }}
-          style={{ padding: '6px 12px', borderRadius: '6px', background: '#8b5cf6', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '12px' }}
+          style={{ padding: '6px 12px', borderRadius: '6px', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '12px' }}
         >OK</button>
         <button
           type="button"

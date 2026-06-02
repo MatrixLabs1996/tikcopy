@@ -33,7 +33,7 @@ export default function ConfirmDialog() {
     danger = true,
   } = opts
 
-  const accent = danger ? 'var(--accent)' : '#8b5cf6'
+  const accent = danger ? 'var(--accent)' : 'var(--accent)'
 
   return (
     <div
@@ -84,7 +84,7 @@ export default function ConfirmDialog() {
               {cancelLabel}
             </button>
             {choices.map((c) => {
-              const c1 = c.danger ? 'var(--accent)' : (c.primary ? '#8b5cf6' : null)
+              const c1 = c.danger ? 'var(--accent)' : (c.primary ? 'var(--accent)' : null)
               return (
                 <button
                   key={c.value}

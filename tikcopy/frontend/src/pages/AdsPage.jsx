@@ -128,9 +128,9 @@ function SaveSwipePanel({ result, niche, projectId, onClose, onSaved, videoFile 
 
         {/* Vídeo perdido (recarregou a página) → pede pra reanexar pra salvar COM vídeo */}
         {lostVideo && (
-          <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)' }}>
-            <div style={{ fontSize: '12.5px', color: '#f59e0b', fontWeight: 600, marginBottom: '4px' }}>
-              ⚠️ O vídeo não está mais carregado
+          <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'rgba(255,62,94,0.08)', border: '1px solid rgba(255,62,94,0.35)' }}>
+            <div style={{ fontSize: '12.5px', color: 'var(--accent)', fontWeight: 600, marginBottom: '4px' }}>
+              O vídeo não está mais carregado
             </div>
             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '8px' }}>
               A página foi recarregada, então o arquivo do vídeo saiu da memória. Pra salvar o anúncio
@@ -225,10 +225,10 @@ function AdResult({ result, niche, projectId, videoFile }) {
         }}>{body}</div>
       </div>
       {result.reverse_engineering && (
-        <div style={{ border: '1px solid var(--border-default)', borderLeft: '3px solid #8b5cf6', borderRadius: '8px', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(139,92,246,0.06)', borderBottom: '1px solid var(--border-default)' }}>
-            <FlaskConical size={13} style={{ color: '#8b5cf6' }} />
-            <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#8b5cf6' }}>Engenharia Reversa</span>
+        <div style={{ border: '1px solid var(--border-default)', borderLeft: '3px solid var(--accent)', borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(255,62,94,0.06)', borderBottom: '1px solid var(--border-default)' }}>
+            <FlaskConical size={13} style={{ color: 'var(--accent)' }} />
+            <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)' }}>Engenharia Reversa</span>
           </div>
           <div style={{ padding: '16px 20px', background: 'var(--bg-surface)' }}>
             <Markdown>{result.reverse_engineering}</Markdown>
@@ -240,7 +240,7 @@ function AdResult({ result, niche, projectId, videoFile }) {
         {savedToSwipe ? (
           <button
             onClick={() => setShowSwipe(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 14px', borderRadius: '7px', fontSize: '13px', fontWeight: 600, background: 'rgba(34,197,94,0.12)', border: '1px solid #22c55e', color: '#22c55e', cursor: 'pointer', fontFamily: 'var(--font)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 14px', borderRadius: '7px', fontSize: '13px', fontWeight: 600, background: 'rgba(46,184,92,0.12)', border: '1px solid var(--success-text)', color: 'var(--success-text)', cursor: 'pointer', fontFamily: 'var(--font)' }}
           >
             <CheckCircle2 size={14} /> Salvo no Swipe
           </button>
@@ -265,12 +265,12 @@ function AdResult({ result, niche, projectId, videoFile }) {
                 toast.error(err.response?.data?.detail || 'Erro ao salvar')
               }
             }}
-            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', background: '#8b5cf6', border: '1px solid #8b5cf6', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', background: 'var(--accent)', border: '1px solid var(--accent)', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font)' }}
           >
             <Brain size={12} /> Salvar na Inteligência
           </button>
         )}
-        <button onClick={() => saveHookToSwipe(result, niche)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', background: 'transparent', border: '1px solid #06b6d4', color: '#06b6d4', cursor: 'pointer', fontFamily: 'var(--font)' }}>
+        <button onClick={() => saveHookToSwipe(result, niche)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font)' }}>
           <Bookmark size={12} /> Salvar hook no Swipe
         </button>
       </div>
@@ -320,7 +320,7 @@ const BatchJobRow = memo(function BatchJobRow({ item, niche, projectId, onDone, 
       >
         {/* Status icon */}
         <div style={{ flexShrink: 0 }}>
-          {isDone && <CheckCircle2 size={16} style={{ color: '#22c55e' }} />}
+          {isDone && <CheckCircle2 size={16} style={{ color: 'var(--success-text)' }} />}
           {isError && <AlertCircle size={16} style={{ color: 'var(--accent)' }} />}
           {isRunning && <Loader2 size={16} style={{ color: 'var(--accent)', animation: 'spin 0.8s linear infinite' }} />}
         </div>
@@ -456,7 +456,7 @@ function BatchMode({ niche, reverseEngineer, adult, translate, activeProject }) 
           {submitting ? 'Enviando...' : 'Arraste os arquivos ou clique para selecionar'}
         </div>
         <div style={{ fontSize: '12px', color: adult ? '#ef4444' : 'var(--text-muted)', marginTop: '6px', fontWeight: adult ? 600 : 400 }}>
-          {adult ? '🔞 Modo 18+ ativo: vai usar transcrição de áudio' : 'Vídeos e áudios (múltiplos arquivos permitidos)'}
+          {adult ? 'Modo 18+ ativo: vai usar transcrição de áudio' : 'Vídeos e áudios (múltiplos arquivos permitidos)'}
         </div>
         <input
           ref={fileInputRef}
@@ -475,7 +475,7 @@ function BatchMode({ niche, reverseEngineer, adult, translate, activeProject }) 
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
               Fila: {queue.length} arquivo{queue.length > 1 ? 's' : ''}
               {doneCount > 0 && (
-                <span style={{ marginLeft: '6px', fontSize: '11px', color: '#22c55e', fontWeight: 400 }}>
+                <span style={{ marginLeft: '6px', fontSize: '11px', color: 'var(--success-text)', fontWeight: 400 }}>
                   ({doneCount} concluído{doneCount > 1 ? 's' : ''})
                 </span>
               )}
@@ -562,11 +562,11 @@ export default function AdsPage() {
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
             <div
               onClick={() => setReverseEngineer((v) => !v)}
-              style={{ width: '36px', height: '20px', borderRadius: '999px', background: reverseEngineer ? '#8b5cf6' : 'var(--border-strong)', position: 'relative', transition: 'background 0.2s', flexShrink: 0, cursor: 'pointer' }}
+              style={{ width: '36px', height: '20px', borderRadius: '999px', background: reverseEngineer ? 'var(--accent)' : 'var(--border-strong)', position: 'relative', transition: 'background 0.2s', flexShrink: 0, cursor: 'pointer' }}
             >
               <div style={{ position: 'absolute', top: '3px', left: reverseEngineer ? '18px' : '3px', width: '14px', height: '14px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
             </div>
-            <span style={{ fontSize: '13px', color: reverseEngineer ? '#8b5cf6' : 'var(--text-secondary)', fontWeight: reverseEngineer ? 500 : 400, display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ fontSize: '13px', color: reverseEngineer ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: reverseEngineer ? 500 : 400, display: 'flex', alignItems: 'center', gap: '5px' }}>
               <FlaskConical size={13} /> Engenharia Reversa
             </span>
           </label>
@@ -580,7 +580,7 @@ export default function AdsPage() {
               <div style={{ position: 'absolute', top: '3px', left: adult ? '18px' : '3px', width: '14px', height: '14px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
             </div>
             <span style={{ fontSize: '13px', color: adult ? '#ef4444' : 'var(--text-secondary)', fontWeight: adult ? 500 : 400 }}>
-              🔞 Anúncio 18+
+              Anúncio 18+
             </span>
           </label>
 

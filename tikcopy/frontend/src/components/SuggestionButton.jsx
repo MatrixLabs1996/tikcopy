@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import api from '../services/api'
 
 /**
- * Botão "✨ Sugerir" do modo Híbrido.
+ * Botão "Sugerir" do modo Híbrido.
  * Abre um modal com uma CAIXA DE TEXTO: o copy escreve o que quer e pede pra IA gerar.
  * Vale pra qualquer campo (hook, body, etc.) — sem menu de estratégias.
  *
@@ -52,8 +52,8 @@ export default function SuggestionButton({ field, currentValue, buildContext, on
           display: 'inline-flex', alignItems: 'center', gap: '4px',
           padding: compact ? '3px 7px' : '4px 9px',
           borderRadius: '6px', fontSize: compact ? '10px' : '11px',
-          background: 'transparent', border: '1px solid #8b5cf6',
-          color: '#8b5cf6', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
+          background: 'transparent', border: '1px solid var(--accent)',
+          color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
         }}
       >
         <Sparkles size={compact ? 10 : 11} />
@@ -81,9 +81,9 @@ export default function SuggestionButton({ field, currentValue, buildContext, on
             {/* Header */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={16} style={{ color: '#8b5cf6' }} />
+                <Sparkles size={16} style={{ color: 'var(--accent)' }} />
                 <div style={{ fontSize: '14px', fontWeight: 600 }}>
-                  Gerar <span style={{ color: '#8b5cf6' }}>{field}</span> com a IA
+                  Gerar <span style={{ color: 'var(--accent)' }}>{field}</span> com a IA
                 </div>
               </div>
               <button onClick={() => setOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
@@ -119,12 +119,12 @@ export default function SuggestionButton({ field, currentValue, buildContext, on
             <div style={{ flex: 1, overflowY: 'auto', padding: '14px 20px' }}>
               {loading && suggestions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-                  <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 10px', color: '#8b5cf6' }} />
+                  <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 10px', color: 'var(--accent)' }} />
                   Gerando…
                 </div>
               ) : suggestions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.6 }}>
-                  <Sparkles size={20} style={{ display: 'block', margin: '0 auto 10px', color: '#8b5cf6', opacity: 0.7 }} />
+                  <Sparkles size={20} style={{ display: 'block', margin: '0 auto 10px', color: 'var(--accent)', opacity: 0.7 }} />
                   Escreva acima o que você quer e clique em <strong>Gerar</strong>.<br />
                   A IA usa a oferta, o briefing e a referência ativa como base.
                 </div>
@@ -136,7 +136,7 @@ export default function SuggestionButton({ field, currentValue, buildContext, on
                       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <button
                           onClick={() => { onApply(s); setOpen(false) }}
-                          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '6px', fontSize: '11px', background: '#8b5cf6', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '6px', fontSize: '11px', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500 }}
                         >
                           <Check size={11} /> Usar esta
                         </button>

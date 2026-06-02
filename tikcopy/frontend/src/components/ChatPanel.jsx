@@ -75,7 +75,7 @@ export default function ChatPanel({ buildContext, chatKey }) {
         flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sparkles size={13} style={{ color: '#8b5cf6' }} />
+          <Sparkles size={13} style={{ color: 'var(--accent)' }} />
           <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             Chat com IA
           </div>
@@ -113,10 +113,10 @@ export default function ChatPanel({ buildContext, chatKey }) {
                     color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '11px',
                     fontFamily: 'var(--font)', lineHeight: 1.4,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#8b5cf6'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--text-primary)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
                 >
-                  ✨ {q.label}
+                  {q.label}
                 </button>
               ))}
             </div>
@@ -126,7 +126,7 @@ export default function ChatPanel({ buildContext, chatKey }) {
           <div key={i} style={{ marginBottom: '14px' }}>
             <div style={{
               fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
-              color: m.role === 'user' ? 'var(--accent)' : '#8b5cf6',
+              color: m.role === 'user' ? 'var(--accent)' : 'var(--accent)',
               marginBottom: '4px', textTransform: 'uppercase',
             }}>
               {m.role === 'user' ? 'Você' : 'IA'}
@@ -181,8 +181,8 @@ export default function ChatPanel({ buildContext, chatKey }) {
             disabled={loading || !input.trim()}
             style={{
               padding: '8px 12px', borderRadius: '7px', flexShrink: 0,
-              background: input.trim() && !loading ? '#8b5cf6' : 'transparent',
-              border: `1px solid ${input.trim() && !loading ? '#8b5cf6' : 'var(--border-default)'}`,
+              background: input.trim() && !loading ? 'var(--accent)' : 'transparent',
+              border: `1px solid ${input.trim() && !loading ? 'var(--accent)' : 'var(--border-default)'}`,
               color: input.trim() && !loading ? '#fff' : 'var(--text-muted)',
               cursor: input.trim() && !loading ? 'pointer' : 'default',
               display: 'flex', alignItems: 'center',

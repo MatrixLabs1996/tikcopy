@@ -14,8 +14,8 @@ const TABS = [
 ]
 
 const RATING_META = {
-  validado: { label: 'Validado', icon: Trophy,        color: '#16a34a', bg: 'rgba(34,197,94,0.1)',  border: 'rgba(34,197,94,0.3)' },
-  em_teste: { label: 'Em teste', icon: FlaskConical,  color: '#0891b2', bg: 'rgba(6,182,212,0.1)',  border: 'rgba(6,182,212,0.3)' },
+  validado: { label: 'Validado', icon: Trophy,        color: '#16a34a', bg: 'rgba(46,184,92,0.1)',  border: 'rgba(46,184,92,0.3)' },
+  em_teste: { label: 'Em teste', icon: FlaskConical,  color: '#0891b2', bg: 'rgba(255,62,94,0.1)',  border: 'rgba(255,62,94,0.3)' },
   ruim:     { label: 'Ruim',     icon: ThumbsDown,    color: '#dc2626', bg: 'rgba(220,38,38,0.1)',  border: 'rgba(220,38,38,0.3)' },
 }
 
@@ -25,8 +25,8 @@ function StatusBadge({ status }) {
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: '4px',
         fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px',
-        background: 'rgba(34,197,94,0.1)', color: '#16a34a',
-        border: '1px solid rgba(34,197,94,0.3)',
+        background: 'rgba(46,184,92,0.1)', color: '#16a34a',
+        border: '1px solid rgba(46,184,92,0.3)',
       }}>
         <CheckCircle2 size={10} /> FINALIZADO
       </span>
@@ -36,8 +36,8 @@ function StatusBadge({ status }) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '4px',
       fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px',
-      background: 'rgba(245,158,11,0.08)', color: '#d97706',
-      border: '1px solid rgba(245,158,11,0.25)',
+      background: 'rgba(255,62,94,0.08)', color: '#d97706',
+      border: '1px solid rgba(255,62,94,0.25)',
     }}>
       <Clock size={10} /> RASCUNHO
     </span>
@@ -299,7 +299,7 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
           {comments.length > 0 && (
             <section>
               <div style={{ fontSize: '11px', color: 'var(--accent)', letterSpacing: '0.07em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>
-                💬 Comentários do editor
+                Comentários do editor
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {comments.map((c, i) => (
@@ -336,8 +336,8 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',
               padding: '8px 14px', borderRadius: '7px', fontSize: '12px',
-              background: 'transparent', border: '1px solid #8b5cf6',
-              color: '#8b5cf6', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
+              background: 'transparent', border: '1px solid var(--accent)',
+              color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
             }}
           >
             <Target size={12} /> Bater controle
@@ -666,7 +666,7 @@ export default function DraftsPage() {
                       <StatusBadge status={fd.status} />
                       {fd.comments?.length > 0 && (
                         <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                          💬 {fd.comments.length}
+                          {fd.comments.length}
                         </span>
                       )}
                     </div>
@@ -708,8 +708,8 @@ export default function DraftsPage() {
                           style={{
                             display: 'flex', alignItems: 'center', gap: '5px',
                             padding: '5px 10px', borderRadius: '6px', fontSize: '11px',
-                            background: 'transparent', border: '1px solid #8b5cf6',
-                            color: '#8b5cf6', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
+                            background: 'transparent', border: '1px solid var(--accent)',
+                            color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
                           }}
                         >
                           <Target size={11} /> Bater controle

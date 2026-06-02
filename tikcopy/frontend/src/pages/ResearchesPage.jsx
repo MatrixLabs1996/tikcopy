@@ -19,7 +19,7 @@ import { confirmAction } from '../stores/useConfirmStore'
 const TYPE_META = {
   upload: { label: 'ARQUIVO', icon: FileText, bg: 'rgba(37,99,235,0.1)',  fg: '#1d4ed8' },
   text:   { label: 'TEXTO',   icon: TypeIcon, bg: 'rgba(100,116,139,0.1)', fg: '#475569' },
-  link:   { label: 'LINK',    icon: LinkIcon, bg: 'rgba(245,158,11,0.1)',  fg: '#d97706' },
+  link:   { label: 'LINK',    icon: LinkIcon, bg: 'rgba(255,62,94,0.1)',  fg: '#d97706' },
 }
 
 const FILE_TYPE_LABEL = {
@@ -89,8 +89,8 @@ function DocCard({ doc, publicos, onOpen, onDelete, onLink, linking, busy, linke
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
           width: '100%', padding: '9px', borderRadius: '7px', fontSize: '12.5px', fontWeight: 600,
-          background: isLinking ? 'var(--bg-active)' : linked ? 'rgba(34,197,94,0.12)' : 'var(--accent)',
-          border: `1px solid ${linked && !isLinking ? 'rgba(34,197,94,0.4)' : 'var(--accent)'}`,
+          background: isLinking ? 'var(--bg-active)' : linked ? 'rgba(46,184,92,0.12)' : 'var(--accent)',
+          border: `1px solid ${linked && !isLinking ? 'rgba(46,184,92,0.4)' : 'var(--accent)'}`,
           color: isLinking ? 'var(--text-muted)' : linked ? '#16a34a' : '#fff',
           cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'var(--font)',
           boxShadow: (isLinking || linked) ? 'none' : '0 1px 3px rgba(255,62,94,0.3)',

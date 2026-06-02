@@ -71,11 +71,11 @@ const UNIVERSAL_TEMPLATE = `# Regras GERAIS de copywriting (todos os projetos)
 const TYPE_META = {
   document:           { icon: FileType,   label: 'Documento',     color: '#3b82f6' },
   vsl_analysis:       { icon: FileVideo,  label: 'Análise VSL',   color: '#10b981' },
-  ad_analysis:        { icon: Megaphone,  label: 'Análise Ad',    color: '#f59e0b' },
-  transcript_vsl:     { icon: FileVideo,  label: 'Transcrição VSL', color: '#06b6d4' },
-  transcript_ad:      { icon: Megaphone,  label: 'Transcrição Ad',  color: '#ec4899' },
-  transcript_organic: { icon: FileText,   label: 'Vídeo Orgânico',  color: '#8b5cf6' },
-  transcript_lesson:  { icon: FileText,   label: 'Aula / Podcast',  color: '#22c55e' },
+  ad_analysis:        { icon: Megaphone,  label: 'Análise Ad',    color: 'var(--accent)' },
+  transcript_vsl:     { icon: FileVideo,  label: 'Transcrição VSL', color: 'var(--accent)' },
+  transcript_ad:      { icon: Megaphone,  label: 'Transcrição Ad',  color: 'var(--accent)' },
+  transcript_organic: { icon: FileText,   label: 'Vídeo Orgânico',  color: 'var(--accent)' },
+  transcript_lesson:  { icon: FileText,   label: 'Aula / Podcast',  color: 'var(--success-text)' },
   manual_note:        { icon: FileText,   label: 'Nota manual',     color: '#a855f7' },
   hook:               { icon: FileText,   label: 'Hook',            color: '#f97316' },
 }
@@ -293,8 +293,8 @@ export default function CopyZonePage() {
       <>
           {/* Instruções customizadas — Universal + Projeto */}
           <div style={{
-            border: `1px solid ${activeHasUnsaved ? '#f59e0b' : 'var(--border-default)'}`,
-            borderLeft: '3px solid #8b5cf6',
+            border: `1px solid ${activeHasUnsaved ? 'var(--accent)' : 'var(--border-default)'}`,
+            borderLeft: '3px solid var(--accent)',
             borderRadius: '10px', marginBottom: '20px',
             background: 'var(--bg-surface)', overflow: 'hidden',
           }}>
@@ -307,12 +307,12 @@ export default function CopyZonePage() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Sparkles size={15} style={{ color: '#8b5cf6' }} />
+                <Sparkles size={15} style={{ color: 'var(--accent)' }} />
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     Instruções do assistente
                     {(hasUnsavedInstructions || hasUnsavedUniversal) && (
-                      <span style={{ marginLeft: '8px', fontSize: '10px', color: '#f59e0b', fontWeight: 500 }}>
+                      <span style={{ marginLeft: '8px', fontSize: '10px', color: 'var(--accent)', fontWeight: 500 }}>
                         ● não salvo
                       </span>
                     )}
@@ -338,13 +338,13 @@ export default function CopyZonePage() {
                       background: 'transparent', border: 'none', cursor: 'pointer',
                       fontFamily: 'var(--font)', fontWeight: instructionsTab === 'universal' ? 600 : 400,
                       color: instructionsTab === 'universal' ? 'var(--text-primary)' : 'var(--text-muted)',
-                      borderBottom: instructionsTab === 'universal' ? '2px solid #8b5cf6' : '2px solid transparent',
+                      borderBottom: instructionsTab === 'universal' ? '2px solid var(--accent)' : '2px solid transparent',
                       marginBottom: '-1px',
                     }}
                   >
-                    🌐 Universais
+                    Universais
                     {hasUnsavedUniversal && instructionsTab !== 'universal' && (
-                      <span style={{ marginLeft: '4px', color: '#f59e0b' }}>●</span>
+                      <span style={{ marginLeft: '4px', color: 'var(--accent)' }}>●</span>
                     )}
                   </button>
                   <button
@@ -360,9 +360,9 @@ export default function CopyZonePage() {
                       opacity: projectId ? 1 : 0.4,
                     }}
                   >
-                    📌 Deste projeto {activeProject?.name && `(${activeProject.name})`}
+                    Deste projeto {activeProject?.name && `(${activeProject.name})`}
                     {hasUnsavedInstructions && instructionsTab !== 'project' && (
-                      <span style={{ marginLeft: '4px', color: '#f59e0b' }}>●</span>
+                      <span style={{ marginLeft: '4px', color: 'var(--accent)' }}>●</span>
                     )}
                   </button>
                 </div>
@@ -372,9 +372,9 @@ export default function CopyZonePage() {
                   {/* Descrição contextual */}
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>
                     {instructionsTab === 'universal' ? (
-                      <>🌐 <strong>Universais</strong> — valem pra <strong>todos</strong> os projetos. Coloque aqui regras gerais (tom, formato de resposta, o que nunca fazer).</>
+                      <><strong>Universais</strong> — valem pra <strong>todos</strong> os projetos. Coloque aqui regras gerais (tom, formato de resposta, o que nunca fazer).</>
                     ) : (
-                      <>📌 <strong>Deste projeto</strong> — específicas para <strong>{activeProject?.name || '...'}</strong>. Têm prioridade sobre as universais em caso de conflito.</>
+                      <><strong>Deste projeto</strong> — específicas para <strong>{activeProject?.name || '...'}</strong>. Têm prioridade sobre as universais em caso de conflito.</>
                     )}
                   </div>
 
@@ -412,8 +412,8 @@ export default function CopyZonePage() {
                           style={{
                             display: 'flex', alignItems: 'center', gap: '5px',
                             padding: '7px 14px', borderRadius: '6px', fontSize: '12px',
-                            background: activeHasUnsaved ? '#8b5cf6' : 'var(--bg-elevated)',
-                            border: `1px solid ${activeHasUnsaved ? '#8b5cf6' : 'var(--border-default)'}`,
+                            background: activeHasUnsaved ? 'var(--accent)' : 'var(--bg-elevated)',
+                            border: `1px solid ${activeHasUnsaved ? 'var(--accent)' : 'var(--border-default)'}`,
                             color: activeHasUnsaved ? '#fff' : 'var(--text-muted)',
                             cursor: activeHasUnsaved ? 'pointer' : 'default',
                             fontFamily: 'var(--font)', fontWeight: 500,
@@ -452,7 +452,7 @@ export default function CopyZonePage() {
               marginBottom: '12px',
               transition: 'border-color 0.15s',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#8b5cf6'}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent)'}
             onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-default)'}
           >
             <Upload size={22} style={{ color: 'var(--text-muted)', marginBottom: '6px' }} />
@@ -479,9 +479,9 @@ export default function CopyZonePage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
               {[
-                { id: 'obsidian', label: 'Obsidian',         color: '#7c3aed', emoji: '🪨' },
-                { id: 'notion',   label: 'Notion',           color: '#000000', emoji: '📝' },
-                { id: 'claude',   label: 'ZIP genérico',     color: '#d97706', emoji: '📦' },
+                { id: 'obsidian', label: 'Obsidian',         color: '#7c3aed', emoji: '' },
+                { id: 'notion',   label: 'Notion',           color: '#000000', emoji: '' },
+                { id: 'claude',   label: 'ZIP genérico',     color: '#d97706', emoji: '' },
               ].map((src) => (
                 <button
                   key={src.id}
@@ -530,7 +530,7 @@ export default function CopyZonePage() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <FolderArchive size={18} style={{ color: '#8b5cf6' }} />
+                  <FolderArchive size={18} style={{ color: 'var(--accent)' }} />
                   <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     Importar do {showImportHelp === 'obsidian' ? 'Obsidian' : showImportHelp === 'notion' ? 'Notion' : 'ZIP genérico'}
                   </div>
@@ -657,7 +657,7 @@ export default function CopyZonePage() {
                   <button onClick={() => setExpandedId(isOpen ? null : item.id)} title={isOpen ? 'Recolher' : 'Ver conteúdo'} style={{ padding: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
                     <Eye size={13} />
                   </button>
-                  <button onClick={() => handleToggle(item.id, item.active)} title={item.active ? 'Desativar (não usar no contexto)' : 'Ativar'} style={{ padding: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: item.active ? '#22c55e' : 'var(--text-muted)' }}>
+                  <button onClick={() => handleToggle(item.id, item.active)} title={item.active ? 'Desativar (não usar no contexto)' : 'Ativar'} style={{ padding: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: item.active ? 'var(--success-text)' : 'var(--text-muted)' }}>
                     {item.active ? <Eye size={13} /> : <EyeOff size={13} />}
                   </button>
                   <button onClick={() => handleDelete(item.id)} title="Remover" style={{ padding: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
@@ -679,8 +679,8 @@ export default function CopyZonePage() {
           })}
 
           {/* Dica */}
-          <div style={{ marginTop: '24px', padding: '12px 14px', background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <Brain size={14} style={{ color: '#8b5cf6', flexShrink: 0, marginTop: '1px' }} />
+          <div style={{ marginTop: '24px', padding: '12px 14px', background: 'rgba(255,62,94,0.06)', border: '1px solid rgba(255,62,94,0.2)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+            <Brain size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '1px' }} />
             <div>
               Esta memória é usada como contexto pelo assistente na página <strong>Escrever</strong>.
               Quanto mais conhecimento do nicho você adicionar aqui, melhores serão as sugestões na hora de escrever.

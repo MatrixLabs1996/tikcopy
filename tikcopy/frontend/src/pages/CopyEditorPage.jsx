@@ -22,15 +22,15 @@ const BOOST_UI_ENABLED = false
 // Tipos de memória que viram referência — só transcrição orgânica e de ad
 // (engenharia reversa, análises e aulas não entram aqui)
 const REFERENCE_TYPES = {
-  transcript_ad:      { icon: Megaphone, label: 'Ad',       color: '#ec4899' },
-  transcript_organic: { icon: FileText,  label: 'Orgânico', color: '#8b5cf6' },
+  transcript_ad:      { icon: Megaphone, label: 'Ad',       color: 'var(--accent)' },
+  transcript_organic: { icon: FileText,  label: 'Orgânico', color: 'var(--accent)' },
 }
 
 // Filtros disponíveis no painel de referência
 const REF_FILTERS = [
-  { id: 'organic', label: 'Orgânico',     color: '#8b5cf6', icon: FileText  },
-  { id: 'ad',      label: 'Anúncios',     color: '#ec4899', icon: Megaphone },
-  { id: 'swipe',   label: 'Minhas Copys',  color: '#06b6d4', icon: BookOpen  },
+  { id: 'organic', label: 'Orgânico',     color: 'var(--accent)', icon: FileText  },
+  { id: 'ad',      label: 'Anúncios',     color: 'var(--accent)', icon: Megaphone },
+  { id: 'swipe',   label: 'Minhas Copys',  color: 'var(--accent)', icon: BookOpen  },
 ]
 
 // Converte um draft finalizado de Meus Anúncios em formato de referência
@@ -277,7 +277,7 @@ function ImportAvatarModal({ onClose, onPick }) {
                   </div>
                   {link && (
                     <div style={{ fontSize: '10px', color: 'var(--accent)', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      🔗 {link}
+                      {link}
                     </div>
                   )}
                 </div>
@@ -383,8 +383,8 @@ function ImportAdRefModal({ onClose, onPick }) {
         {/* Abas de tipo */}
         <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
           {[
-            { id: 'ad', label: '📣 Anúncios', count: counts.ad },
-            { id: 'organico', label: '🎥 Orgânico', count: counts.organico },
+            { id: 'ad', label: 'Anúncios', count: counts.ad },
+            { id: 'organico', label: 'Orgânico', count: counts.organico },
           ].map(t => (
             <button
               key={t.id}
@@ -438,16 +438,16 @@ function ImportAdRefModal({ onClose, onPick }) {
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)' }}
               >
                 {p.kind === 'organico'
-                  ? <FileText size={14} style={{ color: '#8b5cf6', flexShrink: 0, marginTop: '2px' }} />
+                  ? <FileText size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '2px' }} />
                   : <Megaphone size={14} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '2px' }} />}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>
                     {p.title}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px', fontSize: '10px', color: 'var(--text-muted)' }}>
-                    {p.niche && <span>📂 {p.niche}</span>}
-                    {p.format && <span>🎬 {p.format}</span>}
-                    {p.hasVideo && <span style={{ color: '#22c55e' }}>• tem vídeo</span>}
+                    {p.niche && <span>{p.niche}</span>}
+                    {p.format && <span>{p.format}</span>}
+                    {p.hasVideo && <span style={{ color: 'var(--success-text)' }}>• tem vídeo</span>}
                     {a.source && <span style={{ color: 'var(--accent)' }}>• tem link</span>}
                   </div>
                   {p.hook && (
@@ -535,7 +535,7 @@ function LabeledReference({ structureGuide }) {
   const chip = (text) => (
     <div style={{
       display: 'inline-block', fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em',
-      color: '#8b5cf6', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.35)',
+      color: 'var(--accent)', background: 'rgba(255,62,94,0.12)', border: '1px solid rgba(255,62,94,0.35)',
       borderRadius: '5px', padding: '2px 8px', marginBottom: '5px',
     }}>{text}</div>
   )
@@ -545,7 +545,7 @@ function LabeledReference({ structureGuide }) {
     <div>
       {structureGuide.hook_text && (
         <div style={{ marginBottom: '4px' }}>
-          {chip('🎣 Gancho')}
+          {chip('Gancho')}
           <div style={para}>{structureGuide.hook_text}</div>
         </div>
       )}
@@ -599,7 +599,7 @@ function ReferencePanel({ memoryItems, finalDrafts, selected, onSelect, onClear,
           padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)',
           flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#06b6d4' }}>📌 Referência ativa</div>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>Referência ativa</div>
           <button
             onClick={onClear}
             style={{
@@ -629,7 +629,7 @@ function ReferencePanel({ memoryItems, finalDrafts, selected, onSelect, onClear,
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
           <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            📖 Referência
+            Referência
           </div>
           {onRefresh && (
             <button
@@ -688,7 +688,7 @@ function ReferencePanel({ memoryItems, finalDrafts, selected, onSelect, onClear,
             className="tc-input"
             style={{ width: '100%', fontSize: '11px', padding: '6px 8px', marginBottom: '6px' }}
           >
-            <option value="">🏷️ Todos os nichos</option>
+            <option value="">Todos os nichos</option>
             {nichesAvailable.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         )}
@@ -723,7 +723,7 @@ function ReferencePanel({ memoryItems, finalDrafts, selected, onSelect, onClear,
         {organicBase && organicBase.trim() ? (
           <>
             <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '8px' }}>
-              🎬 Vídeo da Comunicação
+              Vídeo da Comunicação
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
               {organicBase}
@@ -796,10 +796,10 @@ function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelec
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {showTabs && (
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-default)', flexShrink: 0, background: 'var(--bg-elevated)' }}>
-          {writeMode === 'hibrido' && <TabBtn id="chat" label="✨ Chat IA" color="#8b5cf6" />}
-          <TabBtn id="ref" label="📖 Referência" color="var(--accent)" />
-          {hasRefLayers && <TabBtn id="7camadas" label="✦ 7 Camadas" color="#f43f5e" />}
-          {hasBrainstorm && <TabBtn id="brainstorm" label="✦ Brainstorm" color="#f43f5e" />}
+          {writeMode === 'hibrido' && <TabBtn id="chat" label="Chat IA" color="var(--accent)" />}
+          <TabBtn id="ref" label="Referência" color="var(--accent)" />
+          {hasRefLayers && <TabBtn id="7camadas" label="✦ 7 Camadas" color="var(--accent)" />}
+          {hasBrainstorm && <TabBtn id="brainstorm" label="✦ Brainstorm" color="var(--accent)" />}
         </div>
       )}
 
@@ -809,7 +809,7 @@ function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelec
         ) : tab === 'brainstorm' && hasBrainstorm ? (
           <div style={{ height: '100%', overflowY: 'auto', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#f43f5e', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 ✦ Conceito do Brainstorm
               </div>
               <button
@@ -938,8 +938,8 @@ function OrganicSwipePickerModal({ onClose, onPick }) {
         {/* Abas de tipo */}
         <div style={{ display: 'flex', gap: '6px', padding: '12px 22px 0' }}>
           {[
-            { id: 'organico', label: '🎥 Orgânico', count: counts.organico },
-            { id: 'ad', label: '📣 Anúncios', count: counts.ad },
+            { id: 'organico', label: 'Orgânico', count: counts.organico },
+            { id: 'ad', label: 'Anúncios', count: counts.ad },
           ].map(t => (
             <button
               key={t.id}
@@ -1046,7 +1046,7 @@ export default function CopyEditorPage() {
   })
 
   // Persistência: chave depende se tá editando draft existente ou novo
-  // Sobrevive a trocar de aba (Escrever ↔ Transcrever ↔ Swipe etc.) E refresh do browser.
+  // Sobrevive a trocar de aba (Escrever Transcrever Swipe etc.) E refresh do browser.
   const persistKey = editingId ? `copyEditor:edit:${editingId}` : 'copyEditor:new'
   const [meta, setMeta] = usePersistedState(`${persistKey}:meta`, emptyMeta())
   const [briefing, setBriefing] = usePersistedState(`${persistKey}:briefing`, { ...EMPTY_BRIEFING })
@@ -1083,7 +1083,7 @@ export default function CopyEditorPage() {
   }
 
   // ── (Manual) Estrutura invisível importada da Comunicação ──
-  // Guia editável (esqueleto psicológico) que orienta hook + body, com toggle 👁️.
+  // Guia editável (esqueleto psicológico) que orienta hook + body, com toggle .
   const [structureGuide, setStructureGuide] = usePersistedState(`${persistKey}:structure`, { hook: '', hook_text: '', body: [] })
   const [guideVisible, setGuideVisible] = usePersistedState(`${persistKey}:structureVisible`, true)
   const [loadingStructure, setLoadingStructure] = useState(false)
@@ -1490,7 +1490,7 @@ export default function CopyEditorPage() {
           fields_data,
         })
         savedSnapRef.current = currentSnap()   // marca como salvo (limpa o "dirty")
-        toast.success(status === 'final' ? '✅ AD finalizado atualizado!' : 'Rascunho atualizado!')
+        toast.success(status === 'final' ? 'AD finalizado atualizado!' : 'Rascunho atualizado!')
       } else {
         // Cria novo
         await api.post('/drafts', {
@@ -1498,7 +1498,7 @@ export default function CopyEditorPage() {
           project_id: activeProject?.id || undefined,
           fields_data,
         })
-        toast.success(status === 'final' ? '✅ AD finalizado salvo!' : 'Rascunho salvo!')
+        toast.success(status === 'final' ? 'AD finalizado salvo!' : 'Rascunho salvo!')
         resetForm()
       }
       return true
@@ -1589,12 +1589,12 @@ export default function CopyEditorPage() {
           <div style={{
             marginBottom: '14px', padding: '10px 14px',
             borderRadius: '8px',
-            background: loadedDraft.fields_data?.status === 'final' ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
-            border: `1px solid ${loadedDraft.fields_data?.status === 'final' ? 'rgba(34,197,94,0.25)' : 'rgba(245,158,11,0.25)'}`,
+            background: loadedDraft.fields_data?.status === 'final' ? 'rgba(46,184,92,0.08)' : 'rgba(255,62,94,0.08)',
+            border: `1px solid ${loadedDraft.fields_data?.status === 'final' ? 'rgba(46,184,92,0.25)' : 'rgba(255,62,94,0.25)'}`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
           }}>
             <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              {loadedDraft.fields_data?.status === 'final' ? '✅' : '✏️'} Editando: <strong style={{ color: 'var(--text-primary)' }}>{loadedDraft.title}</strong>
+              {loadedDraft.fields_data?.status === 'final' ? '' : '✏️'} Editando: <strong style={{ color: 'var(--text-primary)' }}>{loadedDraft.title}</strong>
               {loadedDraft.fields_data?.status === 'final' && (
                 <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>(AD finalizado)</span>
               )}
@@ -1625,9 +1625,9 @@ export default function CopyEditorPage() {
             <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', padding: '3px', width: 'fit-content' }}>
                 {[
-                  { id: 'manual',  label: '🖊️ Manual',    desc: 'Você escreve' },
-                  { id: 'hibrido', label: '🤝 Híbrido',   desc: 'IA sugere quando pedir' },
-                  { id: 'auto',    label: '🤖 Automático', desc: 'IA gera tudo (em construção)', disabled: true },
+                  { id: 'manual',  label: 'Manual',    desc: 'Você escreve' },
+                  { id: 'hibrido', label: 'Híbrido',   desc: 'IA sugere quando pedir' },
+                  { id: 'auto',    label: 'Automático', desc: 'IA gera tudo (em construção)', disabled: true },
                 ].map(m => (
                   <button
                     key={m.id}
@@ -1658,11 +1658,11 @@ export default function CopyEditorPage() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '7px',
                     padding: '6px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 600,
-                    background: boostOn ? 'linear-gradient(90deg,#8b5cf6,#ec4899)' : 'var(--bg-elevated)',
+                    background: boostOn ? 'linear-gradient(90deg,var(--accent),var(--accent))' : 'var(--bg-elevated)',
                     border: `1px solid ${boostOn ? 'transparent' : 'var(--border-default)'}`,
                     color: boostOn ? '#fff' : 'var(--text-secondary)',
                     cursor: 'pointer', fontFamily: 'var(--font)',
-                    boxShadow: boostOn ? '0 1px 8px rgba(139,92,246,0.4)' : 'none',
+                    boxShadow: boostOn ? '0 1px 8px rgba(255,62,94,0.4)' : 'none',
                     transition: 'all 0.15s',
                   }}
                 >
@@ -1677,7 +1677,7 @@ export default function CopyEditorPage() {
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '12px',
                 padding: '8px 12px', borderRadius: '8px', fontSize: '12px',
-                background: '#8b5cf615', border: '1px solid #8b5cf6', color: '#8b5cf6',
+                background: 'rgba(255,62,94,0.08)', border: '1px solid var(--accent)', color: 'var(--accent)',
                 fontWeight: 500, width: 'fit-content',
               }}
                 title="A IA escreve com base no dossiê desta oferta. Troque o projeto na barra lateral pra mudar a oferta."
@@ -1708,8 +1708,8 @@ export default function CopyEditorPage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '8px 12px', borderRadius: '7px', fontSize: '12px',
-                background: aiOpen ? '#06b6d4' : 'transparent',
-                border: `1px solid ${aiOpen ? '#06b6d4' : 'var(--border-default)'}`,
+                background: aiOpen ? 'var(--accent)' : 'transparent',
+                border: `1px solid ${aiOpen ? 'var(--accent)' : 'var(--border-default)'}`,
                 color: aiOpen ? '#fff' : 'var(--text-secondary)',
                 cursor: 'pointer', fontFamily: 'var(--font)',
               }}
@@ -1746,7 +1746,7 @@ export default function CopyEditorPage() {
                         style={{
                           display: 'flex', alignItems: 'center', gap: '4px',
                           padding: '4px 9px', borderRadius: '5px', fontSize: '11px',
-                          background: 'transparent', border: '1px solid #8b5cf6', color: '#8b5cf6',
+                          background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)',
                           cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500, flexShrink: 0,
                         }}
                       >
@@ -1783,7 +1783,7 @@ export default function CopyEditorPage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: '4px',
                   padding: '3px 8px', borderRadius: '5px', fontSize: '11px',
-                  background: 'transparent', border: '1px solid #8b5cf6', color: '#8b5cf6',
+                  background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)',
                   cursor: 'pointer', fontFamily: 'var(--font)',
                 }}
               >
@@ -1876,8 +1876,8 @@ export default function CopyEditorPage() {
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '5px',
                     padding: '4px 9px', borderRadius: '6px', fontSize: '11px',
-                    background: 'transparent', border: '1px solid #8b5cf6',
-                    color: '#8b5cf6', cursor: loadingStructure ? 'wait' : 'pointer',
+                    background: 'transparent', border: '1px solid var(--accent)',
+                    color: 'var(--accent)', cursor: loadingStructure ? 'wait' : 'pointer',
                     fontFamily: 'var(--font)', fontWeight: 500,
                   }}
                 >
@@ -1893,7 +1893,7 @@ export default function CopyEditorPage() {
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '5px',
                     padding: '4px 9px', borderRadius: '6px', fontSize: '11px',
-                    background: bodyHasStructure ? 'rgba(239,68,68,0.08)' : '#8b5cf6',
+                    background: bodyHasStructure ? 'rgba(239,68,68,0.08)' : 'var(--accent)',
                     border: bodyHasStructure ? '1px solid rgba(239,68,68,0.5)' : 'none',
                     color: bodyHasStructure ? '#ef4444' : '#fff', cursor: 'pointer',
                     fontFamily: 'var(--font)', fontWeight: 500,

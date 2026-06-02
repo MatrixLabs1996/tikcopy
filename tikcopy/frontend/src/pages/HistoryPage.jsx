@@ -4,7 +4,7 @@ import api from '../services/api'
 import { confirmAction } from '../stores/useConfirmStore'
 
 const TYPE_LABEL = { organic: 'Orgânico', lesson: 'Aula', ad: 'Anúncio' }
-const TYPE_COLOR = { organic: 'var(--accent)', lesson: '#4a9eff', ad: '#f59e0b' }
+const TYPE_COLOR = { organic: 'var(--accent)', lesson: '#4a9eff', ad: 'var(--accent)' }
 
 export default function HistoryPage() {
   const [items, setItems] = useState([])

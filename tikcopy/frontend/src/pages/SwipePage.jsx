@@ -276,8 +276,8 @@ function VideoPlayer({ swipeId, hasVideo, autoLoad = false, maxHeight = 300 }) {
       disabled={loading}
       style={{
         width: '100%', padding: '32px 16px', borderRadius: '8px',
-        background: 'rgba(6,182,212,0.06)', border: '2px dashed rgba(6,182,212,0.3)',
-        color: '#06b6d4', cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font)',
+        background: 'rgba(255,62,94,0.06)', border: '2px dashed rgba(255,62,94,0.3)',
+        color: 'var(--accent)', cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
       }}
     >
@@ -330,7 +330,7 @@ function VideoUploadBtn({ tab, onUploaded }) {
         style={{
           display: 'flex', alignItems: 'center', gap: '5px',
           padding: '7px 12px', borderRadius: '6px', fontSize: '12px',
-          background: '#06b6d4', border: '1px solid #06b6d4',
+          background: 'var(--accent)', border: '1px solid var(--accent)',
           color: '#fff', cursor: uploading ? 'wait' : 'pointer',
           fontFamily: 'var(--font)', fontWeight: 500,
           opacity: uploading ? 0.6 : 1,
@@ -396,7 +396,7 @@ function SelectWithCreate({ label, value, onChange, options: optionsProp, kind, 
           />
           <button
             onClick={() => { if (custom.trim()) { commit(custom.trim()); setCreating(false) } }}
-            style={{ padding: '6px 12px', borderRadius: '6px', background: '#8b5cf6', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '12px' }}
+            style={{ padding: '6px 12px', borderRadius: '6px', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '12px' }}
           >OK</button>
           <button
             onClick={() => { setCreating(false); setCustom('') }}
@@ -698,8 +698,8 @@ function Chip({ children, color = 'muted' }) {
   const palettes = {
     accent: { bg: 'rgba(255,62,94,0.08)', border: 'rgba(255,62,94,0.2)', text: 'var(--accent)' },
     muted:  { bg: 'var(--bg-active)',     border: 'var(--border-default)', text: 'var(--text-muted)' },
-    purple: { bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.25)', text: '#8b5cf6' },
-    green:  { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)', text: '#22c55e' },
+    purple: { bg: 'rgba(255,62,94,0.08)', border: 'rgba(255,62,94,0.25)', text: 'var(--accent)' },
+    green:  { bg: 'rgba(46,184,92,0.08)', border: 'rgba(46,184,92,0.25)', text: 'var(--success-text)' },
   }
   const p = palettes[color] || palettes.muted
   return (
@@ -820,7 +820,7 @@ const HookCard = memo(function HookCard({ swipe, onDelete, onEdit, onUseAsRefere
 
         {/* Custom tags */}
         {(c.custom_tags || []).map(t => (
-          <ClickChip key={t} color="#8b5cf6" onClick={() => onTagClick('custom_tag', t)}>{t}</ClickChip>
+          <ClickChip key={t} color="var(--accent)" onClick={() => onTagClick('custom_tag', t)}>{t}</ClickChip>
         ))}
 
         {/* Status (dropdown editável) */}
@@ -955,7 +955,7 @@ const AdCard = memo(function AdCard({ swipe, onDelete, onEdit, onUseAsReference,
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '4px',
               fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '999px',
-              background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', color: '#f59e0b',
+              background: 'rgba(255,62,94,0.12)', border: '1px solid rgba(255,62,94,0.35)', color: 'var(--accent)',
             }}>
               <Clock size={11} /> Transcrição pendente
             </span>
@@ -986,12 +986,12 @@ const AdCard = memo(function AdCard({ swipe, onDelete, onEdit, onUseAsReference,
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
             padding: '9px', borderRadius: '7px', fontSize: '12px', fontWeight: 600,
-            background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.4)',
-            color: '#f59e0b', cursor: isAnalyzing ? 'wait' : 'pointer', fontFamily: 'var(--font)',
+            background: 'rgba(255,62,94,0.12)', border: '1px solid rgba(255,62,94,0.4)',
+            color: 'var(--accent)', cursor: isAnalyzing ? 'wait' : 'pointer', fontFamily: 'var(--font)',
             opacity: isAnalyzing ? 0.7 : 1,
           }}
-          onMouseEnter={(e) => { if (!isAnalyzing) e.currentTarget.style.background = 'rgba(245,158,11,0.2)' }}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(245,158,11,0.12)'}
+          onMouseEnter={(e) => { if (!isAnalyzing) e.currentTarget.style.background = 'rgba(255,62,94,0.2)' }}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,62,94,0.12)'}
         >
           {isAnalyzing
             ? <><Loader2 size={13} style={{ animation: 'spin 0.9s linear infinite' }} /> Analisando…</>
@@ -1167,8 +1167,8 @@ function TranscriptionViewerModal({ swipe, onClose, onUseAsReference, onEdit }) 
           <div style={{ overflowY: 'auto', padding: '18px 22px', borderRight: '1px solid var(--border-subtle)' }}>
             {c.niche || c.format ? (
               <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                {c.niche && <Chip color="accent">🎯 {c.niche}</Chip>}
-                {c.format && <Chip>🎬 {c.format}</Chip>}
+                {c.niche && <Chip color="accent">{c.niche}</Chip>}
+                {c.format && <Chip>{c.format}</Chip>}
               </div>
             ) : null}
             {c.hook && (
@@ -1292,8 +1292,8 @@ const OrganicCard = memo(function OrganicCard({ swipe, onDelete, onEdit, onOpenT
       {/* Header: tags + ações */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-          {c.niche  && <Chip color="accent">🎯 {c.niche}</Chip>}
-          {c.format && <Chip>🎬 {c.format}</Chip>}
+          {c.niche  && <Chip color="accent">{c.niche}</Chip>}
+          {c.format && <Chip>{c.format}</Chip>}
         </div>
         <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
           <button onClick={() => onEditOrganico(swipe)} style={btnStyle} title="Editar"><PenLine size={11} /></button>
@@ -1384,7 +1384,7 @@ const OrganicCard = memo(function OrganicCard({ swipe, onDelete, onEdit, onOpenT
           fontSize: '10px', color: 'var(--accent)', textDecoration: 'none',
           wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: '4px',
         }}>
-          🔗 {videoUrl.length > 40 ? videoUrl.slice(0, 40) + '…' : videoUrl}
+          {videoUrl.length > 40 ? videoUrl.slice(0, 40) + '…' : videoUrl}
         </a>
       )}
 
@@ -1394,7 +1394,7 @@ const OrganicCard = memo(function OrganicCard({ swipe, onDelete, onEdit, onOpenT
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
           padding: '7px 12px', borderRadius: '6px', fontSize: '11px',
-          background: 'transparent', border: '1px solid #06b6d4', color: '#06b6d4',
+          background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)',
           cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
         }}
       >
@@ -1533,7 +1533,7 @@ const AvatarCard = memo(function AvatarCard({ swipe, onDelete, onUseAsReference,
                 background: 'var(--accent)', color: '#fff', textDecoration: 'none',
                 fontFamily: 'var(--font)', fontWeight: 500,
               }}>
-                🔗 Abrir
+                Abrir
               </a>
               <button
                 onClick={() => { navigator.clipboard.writeText(videoUrl); toast.success('Link copiado!') }}
@@ -1554,7 +1554,7 @@ const AvatarCard = memo(function AvatarCard({ swipe, onDelete, onUseAsReference,
             title="Inserir avatar em uma copy"
             style={{
               padding: '6px 8px', borderRadius: '5px', fontSize: '11px',
-              background: 'transparent', border: '1px solid #8b5cf6', color: '#8b5cf6',
+              background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)',
               cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
               display: 'flex', alignItems: 'center', gap: '3px',
             }}
@@ -1705,7 +1705,7 @@ function InsertAvatarInCopyModal({ swipe, onClose }) {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <PenLine size={16} style={{ color: '#8b5cf6' }} />
+            <PenLine size={16} style={{ color: 'var(--accent)' }} />
             <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
               Inserir avatar em qual copy?
             </div>
@@ -1761,7 +1761,7 @@ function InsertAvatarInCopyModal({ swipe, onClose }) {
                   cursor: inserting === d.id ? 'wait' : 'pointer', fontFamily: 'var(--font)',
                   transition: 'border-color 0.15s', opacity: inserting === d.id ? 0.6 : 1,
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = '#8b5cf6'}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent)'}
                 onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-default)'}
               >
                 <div style={{ minWidth: 0, flex: 1 }}>
@@ -1770,10 +1770,10 @@ function InsertAvatarInCopyModal({ swipe, onClose }) {
                   </div>
                   <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
                     {formatDate(d.created_at)}
-                    {d.fields_data?.avatar && <span style={{ marginLeft: '6px', color: '#22c55e' }}>● já tem avatar</span>}
+                    {d.fields_data?.avatar && <span style={{ marginLeft: '6px', color: 'var(--success-text)' }}>● já tem avatar</span>}
                   </div>
                 </div>
-                <span style={{ fontSize: '11px', color: '#8b5cf6', flexShrink: 0, marginLeft: '8px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--accent)', flexShrink: 0, marginLeft: '8px' }}>
                   {inserting === d.id ? '...' : '+ Inserir'}
                 </span>
               </button>
@@ -1892,7 +1892,7 @@ function EditHookModal({ swipe, allCustomHookTypes, onClose, onSaved }) {
                     onKeyDown={(e) => { if (e.key === 'Enter') handleNewType() }}
                     style={{ fontSize: '12px' }}
                   />
-                  <button onClick={handleNewType} style={{ ...btnStyle, padding: '0 10px', color: '#22c55e', borderColor: '#22c55e' }}><Check size={12} /></button>
+                  <button onClick={handleNewType} style={{ ...btnStyle, padding: '0 10px', color: 'var(--success-text)', borderColor: 'var(--success-text)' }}><Check size={12} /></button>
                   <button onClick={() => { setShowNewType(false); setNewTypeInput('') }} style={{ ...btnStyle, padding: '0 10px' }}><X size={12} /></button>
                 </div>
               ) : (
@@ -1923,7 +1923,7 @@ function EditHookModal({ swipe, allCustomHookTypes, onClose, onSaved }) {
                   <button
                     onClick={() => setShowNewType(true)}
                     title="Criar tipo novo"
-                    style={{ ...btnStyle, padding: '0 10px', color: '#8b5cf6', borderColor: '#8b5cf680' }}
+                    style={{ ...btnStyle, padding: '0 10px', color: 'var(--accent)', borderColor: 'var(--accent)80' }}
                   >
                     <Plus size={12} />
                   </button>
@@ -1981,7 +1981,7 @@ function EditHookModal({ swipe, allCustomHookTypes, onClose, onSaved }) {
                 {tagsInput.split(',').map(t => t.trim()).filter(Boolean).map(t => (
                   <span key={t} style={{
                     fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px',
-                    background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: '#8b5cf6',
+                    background: 'rgba(255,62,94,0.12)', border: '1px solid rgba(255,62,94,0.3)', color: 'var(--accent)',
                   }}>{t}</span>
                 ))}
               </div>
@@ -2361,10 +2361,10 @@ function ImportModal({ tab, onClose, onSaved }) {
             {isAvatar ? (
               <div style={{
                 padding: '12px 14px', borderRadius: '8px',
-                background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
+                background: 'rgba(255,62,94,0.08)', border: '1px solid rgba(255,62,94,0.2)',
                 fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px', lineHeight: 1.6,
               }}>
-                <div style={{ fontWeight: 600, color: '#8b5cf6', marginBottom: '4px' }}>📋 Formato</div>
+                <div style={{ fontWeight: 600, color: 'var(--accent)', marginBottom: '4px' }}>Formato</div>
                 Cada linha = <strong>descrição | link</strong> (separados por <code style={{ background: 'var(--bg-elevated)', padding: '0 4px', borderRadius: '3px' }}>|</code>)
                 <br />Se não tiver link, deixe só a descrição.
                 <div style={{ marginTop: '8px', fontFamily: 'monospace', fontSize: '11px', opacity: 0.8 }}>
@@ -2553,7 +2553,7 @@ function AdDetailsModal({ swipe, onClose, onUseAsReference, onEdit }) {
               {c.niche && <Chip color="accent">{c.niche}</Chip>}
               {c.format && <Chip>{c.format}</Chip>}
               {adNeedsTranscription(c) && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '999px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)', color: '#f59e0b' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '999px', background: 'rgba(255,62,94,0.12)', border: '1px solid rgba(255,62,94,0.35)', color: 'var(--accent)' }}>
                   <Clock size={11} /> Transcrição pendente
                 </span>
               )}
@@ -2670,7 +2670,7 @@ function TranscribePendingModal({ swipe, onClose, onTranscribed, onUseAnyway, na
         borderRadius: '12px', padding: '24px', maxWidth: '460px', width: '100%',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <Clock size={18} style={{ color: '#f59e0b' }} />
+          <Clock size={18} style={{ color: 'var(--accent)' }} />
           <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Anúncio sem transcrição</div>
         </div>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 16px' }}>
@@ -3225,8 +3225,8 @@ export default function SwipePage() {
             style={{ width: 'auto', fontSize: '12px', padding: '7px 10px' }}
             title="Ordenar"
           >
-            <option value="recent">🕒 Mais recentes</option>
-            <option value="views">👁️ Mais views</option>
+            <option value="recent">Mais recentes</option>
+            <option value="views">Mais views</option>
             <option value="likes">❤️ Mais likes</option>
           </select>
         )}
@@ -3239,7 +3239,7 @@ export default function SwipePage() {
             className="tc-input"
             style={{ width: 'auto', fontSize: '12px', padding: '7px 10px' }}
           >
-            <option value="">🏷️ Todas as tags</option>
+            <option value="">Todas as tags</option>
             {allCustomTags.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         )}
@@ -3295,10 +3295,10 @@ export default function SwipePage() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px',
           padding: '8px 12px', borderRadius: '8px',
-          background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)',
+          background: 'rgba(255,62,94,0.06)', border: '1px solid rgba(255,62,94,0.2)',
           flexWrap: 'wrap',
         }}>
-          <span style={{ fontSize: '11px', color: '#8b5cf6', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
             Filtros ativos:
           </span>
           {activeTagFilters.map(f => {
@@ -3315,7 +3315,7 @@ export default function SwipePage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: '4px',
                   fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '999px',
-                  background: '#8b5cf6', color: '#fff', border: 'none', cursor: 'pointer',
+                  background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
                   fontFamily: 'var(--font)',
                 }}
                 title="Clique pra remover"
@@ -3327,7 +3327,7 @@ export default function SwipePage() {
           })}
           <button
             onClick={clearTagFilters}
-            style={{ fontSize: '11px', color: '#8b5cf6', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto', fontFamily: 'var(--font)' }}
+            style={{ fontSize: '11px', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto', fontFamily: 'var(--font)' }}
           >
             Limpar tudo
           </button>
@@ -3513,7 +3513,7 @@ export default function SwipePage() {
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <span>{g.count} {g.count === 1 ? itemLabel : itemsLabel}</span>
-                  {tab === 'ad' && g.hasVideo > 0 && <span>· {g.hasVideo} 🎬</span>}
+                  {tab === 'ad' && g.hasVideo > 0 && <span>· {g.hasVideo} </span>}
                 </div>
               </button>
             ))}
@@ -3568,7 +3568,7 @@ export default function SwipePage() {
             }}>
               {a.status === 'error'
                 ? <X size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                : <Loader2 size={15} style={{ color: '#f59e0b', animation: 'spin 0.9s linear infinite', flexShrink: 0 }} />}
+                : <Loader2 size={15} style={{ color: 'var(--accent)', animation: 'spin 0.9s linear infinite', flexShrink: 0 }} />}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
                 <div style={{ fontSize: '11px', color: a.status === 'error' ? 'var(--accent)' : 'var(--text-muted)' }}>

@@ -93,7 +93,7 @@ export default function TranscriptionDock() {
               padding: '9px 14px', borderBottom: '1px solid var(--border-subtle)',
             }}>
               <div style={{ flexShrink: 0 }}>
-                {j.status === 'done' && <CheckCircle2 size={14} style={{ color: '#22c55e' }} />}
+                {j.status === 'done' && <CheckCircle2 size={14} style={{ color: 'var(--success-text)' }} />}
                 {j.status === 'error' && <AlertCircle size={14} style={{ color: 'var(--accent)' }} />}
                 {isActive(j) && <Loader2 size={14} style={{ color: 'var(--accent)', animation: 'spin 0.9s linear infinite' }} />}
               </div>

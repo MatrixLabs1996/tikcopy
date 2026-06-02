@@ -9,7 +9,7 @@ import { Eye, EyeOff, Pencil, Check, Plus, Trash2, ListTree } from 'lucide-react
  *  - part: 'hook' | 'body'
  *  - hookText: string                (part === 'hook')
  *  - steps: [{label, purpose}]        (part === 'body')
- *  - visible: bool                    toggle global 👁️
+ *  - visible: bool                    toggle global 
  *  - onToggleVisible: () => void
  *  - onChangeHook: (str) => void
  *  - onChangeSteps: (arr) => void
@@ -19,9 +19,9 @@ export default function StructureGuide({
 }) {
   const [editing, setEditing] = useState(false)
 
-  const accent = '#8b5cf6'
+  const accent = 'var(--accent)'
   const wrap = {
-    background: 'rgba(139,92,246,0.06)', border: '1px dashed rgba(139,92,246,0.45)',
+    background: 'rgba(255,62,94,0.06)', border: '1px dashed rgba(255,62,94,0.45)',
     borderRadius: '10px', marginBottom: '12px', overflow: 'hidden',
   }
   const headerRow = {
@@ -96,7 +96,7 @@ function StepsEditor({ steps, editing, onChange, accent }) {
         <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
           <div style={{
             flexShrink: 0, width: '20px', height: '20px', borderRadius: '5px', marginTop: '1px',
-            background: 'rgba(139,92,246,0.15)', color: accent,
+            background: 'rgba(255,62,94,0.15)', color: accent,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '10px', fontWeight: 700,
           }}>{i + 1}</div>

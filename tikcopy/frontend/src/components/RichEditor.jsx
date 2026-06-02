@@ -339,7 +339,7 @@ function ImproveModal({ selection, instruction, onInstructionChange, loading, re
       >
         <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600 }}>
-            <Sparkles size={16} style={{ color: '#8b5cf6' }} /> Melhorar trecho com IA
+            <Sparkles size={16} style={{ color: 'var(--accent)' }} /> Melhorar trecho com IA
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={16} /></button>
         </div>
@@ -363,7 +363,7 @@ function ImproveModal({ selection, instruction, onInstructionChange, loading, re
               disabled={loading}
               style={{
                 padding: '7px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 500,
-                background: '#8b5cf6', border: 'none', color: '#fff',
+                background: 'var(--accent)', border: 'none', color: '#fff',
                 cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font)',
                 display: 'flex', alignItems: 'center', gap: '5px',
               }}
@@ -378,7 +378,7 @@ function ImproveModal({ selection, instruction, onInstructionChange, loading, re
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px' }}>
           {loading && results.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-              <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 10px', color: '#8b5cf6' }} />
+              <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 10px', color: 'var(--accent)' }} />
               Reescrevendo…
             </div>
           ) : results.length === 0 ? (
@@ -404,7 +404,7 @@ function ImproveModal({ selection, instruction, onInstructionChange, loading, re
                     }}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <button onClick={() => onApply(r)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '6px', fontSize: '11px', background: '#8b5cf6', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500 }}>
+                    <button onClick={() => onApply(r)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '6px', fontSize: '11px', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500 }}>
                       <Check size={11} /> Substituir
                     </button>
                   </div>
@@ -518,7 +518,7 @@ export default function RichEditor({ placeholder = 'Escreva aqui...', onChange, 
 
   const hoveredCommentObj = hoveredComment ? comments.find((c) => c.id === hoveredComment.id) : null
 
-  // ── (C) Mostra o botão flutuante "✨ Melhorar" quando há seleção ──
+  // ── (C) Mostra o botão flutuante "Melhorar" quando há seleção ──
   useEffect(() => {
     if (!editor || !onImproveSelection) return
     const update = () => {
@@ -614,7 +614,7 @@ export default function RichEditor({ placeholder = 'Escreva aqui...', onChange, 
             }}
           >
             <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.6, marginBottom: '3px', fontWeight: 600 }}>
-              💬 Comentário
+              Comentário
             </div>
             {hoveredCommentObj.text}
           </div>
@@ -628,8 +628,8 @@ export default function RichEditor({ placeholder = 'Escreva aqui...', onChange, 
               position: 'absolute', top: selTrigger.top, left: selTrigger.left, zIndex: 60,
               display: 'flex', alignItems: 'center', gap: '5px',
               padding: '5px 10px', borderRadius: '7px', fontSize: '11px', fontWeight: 600,
-              background: '#8b5cf6', border: 'none', color: '#fff', cursor: 'pointer',
-              fontFamily: 'var(--font)', boxShadow: '0 4px 14px rgba(139,92,246,0.45)',
+              background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer',
+              fontFamily: 'var(--font)', boxShadow: '0 4px 14px rgba(255,62,94,0.45)',
             }}
           >
             <Sparkles size={12} /> Melhorar com IA

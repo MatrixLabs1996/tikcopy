@@ -93,7 +93,7 @@ export default function ProgressBar({ currentStatus, steps, compact = false }) {
               <div style={{
                 width: '18px', height: '18px', borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: isPast ? '#22c55e' : isCurrent ? 'transparent' : 'var(--bg-surface)',
+                background: isPast ? 'var(--success-text)' : isCurrent ? 'transparent' : 'var(--bg-surface)',
                 border: isCurrent ? '2px solid var(--accent)' : isPast ? 'none' : '1px solid var(--border-strong)',
                 flexShrink: 0,
               }}>

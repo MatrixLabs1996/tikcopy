@@ -16,10 +16,10 @@ export default function SevenLayers({ data }) {
   if (!data) return null
 
   return (
-    <div style={{ border: '1px solid var(--border-default)', borderLeft: '3px solid #f43f5e', borderRadius: '8px', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(244,63,94,0.06)', borderBottom: '1px solid var(--border-default)' }}>
-        <Layers3 size={13} style={{ color: '#f43f5e' }} />
-        <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#f43f5e' }}>
+    <div style={{ border: '1px solid var(--border-default)', borderLeft: '3px solid var(--accent)', borderRadius: '8px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(255,62,94,0.06)', borderBottom: '1px solid var(--border-default)' }}>
+        <Layers3 size={13} style={{ color: 'var(--accent)' }} />
+        <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)' }}>
           7 Camadas Macro
         </span>
       </div>

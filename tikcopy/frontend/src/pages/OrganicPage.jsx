@@ -74,7 +74,7 @@ function SelectWithCreate({ label, value, onChange, options: optionsProp, kind, 
               if (e.key === 'Escape') { setCreating(false); setCustom('') }
             }}
           />
-          <button type="button" onClick={() => { if (custom.trim()) commit(custom.trim()) }} style={{ padding: '6px 12px', borderRadius: '6px', background: '#8b5cf6', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '12px' }}>OK</button>
+          <button type="button" onClick={() => { if (custom.trim()) commit(custom.trim()) }} style={{ padding: '6px 12px', borderRadius: '6px', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '12px' }}>OK</button>
           <button type="button" onClick={() => { setCreating(false); setCustom('') }} style={{ padding: '6px 10px', borderRadius: '6px', background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
         </div>
       </div>
@@ -133,7 +133,7 @@ function SaveHookModal({ result, niche: initialNiche, onClose }) {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Bookmark size={16} style={{ color: '#06b6d4' }} />
+            <Bookmark size={16} style={{ color: 'var(--accent)' }} />
             <div style={{ fontSize: '15px', fontWeight: 600 }}>Salvar hook no Swipe</div>
           </div>
           <button onClick={onClose} style={{ padding: '4px 8px', borderRadius: '6px', background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={14} /></button>
@@ -237,7 +237,7 @@ function SaveOrganicVideoModal({ result, niche: initialNiche, onClose }) {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Video size={18} style={{ color: '#06b6d4' }} />
+            <Video size={18} style={{ color: 'var(--accent)' }} />
             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
               Salvar vídeo orgânico no Swipe
             </div>
@@ -249,7 +249,7 @@ function SaveOrganicVideoModal({ result, niche: initialNiche, onClose }) {
           {/* Link */}
           <div>
             <label className="tc-label">
-              Link do vídeo {sourceUrl && <span style={{ color: '#22c55e', fontSize: '10px', marginLeft: '4px' }}>● auto-preenchido</span>}
+              Link do vídeo {sourceUrl && <span style={{ color: 'var(--success-text)', fontSize: '10px', marginLeft: '4px' }}>● auto-preenchido</span>}
             </label>
             <div style={{ display: 'flex', gap: '4px' }}>
               <input
@@ -377,7 +377,7 @@ function SaveAvatarModal({ result, projectId, onClose }) {
           {/* Link do vídeo */}
           <div>
             <label className="tc-label">
-              Link do vídeo {sourceUrl && <span style={{ color: '#22c55e', fontSize: '10px', marginLeft: '4px' }}>● auto-preenchido</span>}
+              Link do vídeo {sourceUrl && <span style={{ color: 'var(--success-text)', fontSize: '10px', marginLeft: '4px' }}>● auto-preenchido</span>}
             </label>
             <div style={{ display: 'flex', gap: '4px' }}>
               <input
@@ -442,10 +442,10 @@ function SaveActions({ result, projectId, niche }) {
   return (
     <>
       <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-        <button onClick={() => setShowVideoModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', background: 'transparent', border: '1px solid #22c55e', color: '#22c55e', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500 }}>
+        <button onClick={() => setShowVideoModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', background: 'transparent', border: '1px solid var(--success-text)', color: 'var(--success-text)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500 }}>
           <FileVideo size={12} /> Salvar vídeo no Swipe
         </button>
-        <button onClick={() => setShowHookModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', background: 'transparent', border: '1px solid #06b6d4', color: '#06b6d4', cursor: 'pointer', fontFamily: 'var(--font)' }}>
+        <button onClick={() => setShowHookModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font)' }}>
           <Bookmark size={12} /> Salvar hook no Swipe
         </button>
         <button onClick={() => setShowAvatarModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', background: 'transparent', border: '1px solid #a855f7', color: '#a855f7', cursor: 'pointer', fontFamily: 'var(--font)' }}>
@@ -549,7 +549,7 @@ function JobStatus({ status, error, steps = ORGANIC_URL_STEPS, onSwitchToUpload 
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
           <span style={{ fontSize: '16px', flexShrink: 0 }}>
-            {isVideoRestricted ? '🔒' : needsCookies ? '🍪' : '⚠️'}
+            {isVideoRestricted ? '' : needsCookies ? '' : ''}
           </span>
           <div style={{ flex: 1, lineHeight: 1.5 }}>
             {isVideoRestricted ? (
@@ -575,7 +575,7 @@ function JobStatus({ status, error, steps = ORGANIC_URL_STEPS, onSwitchToUpload 
                 cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
               }}
             >
-              📁 Ir pra Upload de arquivo
+              Ir pra Upload de arquivo
             </button>
             <a
               href="https://snaptik.app/"
@@ -588,7 +588,7 @@ function JobStatus({ status, error, steps = ORGANIC_URL_STEPS, onSwitchToUpload 
                 textDecoration: 'none', fontFamily: 'var(--font)', fontWeight: 500,
               }}
             >
-              🌐 Baixar do TikTok (SnapTik)
+              Baixar do TikTok (SnapTik)
             </a>
           </div>
         )}

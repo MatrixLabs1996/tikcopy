@@ -79,7 +79,7 @@ export default function HomePage() {
             fontSize: '32px', fontWeight: 700, letterSpacing: '-0.8px',
             color: 'var(--text-primary)', lineHeight: 1.15, marginBottom: '10px',
           }}>
-            Olá, {name} 👋
+            Olá, {name} 
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '520px' }}>
             Selecione um projeto pra continuar de onde parou, ou crie um novo pra a IA conhecer o produto.
