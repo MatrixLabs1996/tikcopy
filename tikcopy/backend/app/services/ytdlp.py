@@ -22,22 +22,27 @@ def _impersonate_available() -> bool:
     global _IMPERSONATE_OK
     if _IMPERSONATE_OK is not None:
         return _IMPERSONATE_OK
-    # Pergunta pro PRÓPRIO yt-dlp quais alvos ele consegue usar de verdade.
-    # (Só checar se o módulo curl_cffi existe não basta: pode estar instalado mas
-    # quebrado, e aí o yt-dlp recusa o impersonate em runtime.)
+    import os
+    # DESLIGADO por padrão: no servidor (Railway) o curl_cffi não funciona de fato
+    # — o yt-dlp até LISTA "chrome" como alvo conhecido, mas na hora de usar crasha
+    # com "Impersonate target ... is not available". Pro YouTube quem fura o bloqueio
+    # são os cookies; o impersonate só importa pro TikTok (que tem fallback tikwm).
+    # Reative com a env var YTDLP_IMPERSONATE=1 no dia em que o backend estiver ok.
+    enabled = os.environ.get("YTDLP_IMPERSONATE", "").strip().lower() in ("1", "true", "yes")
     ok = False
-    try:
-        proc = subprocess.run(
-            [sys.executable, "-m", "yt_dlp", "--list-impersonate-targets"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20,
-        )
-        out = (proc.stdout or "") + (proc.stderr or "")
-        ok = proc.returncode == 0 and "chrome" in out.lower()
-    except Exception as exc:
-        logger.warning(f"[ytdlp] falha ao listar impersonate targets: {exc}")
-        ok = False
+    if enabled:
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-m", "yt_dlp", "--list-impersonate-targets"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20,
+            )
+            out = (proc.stdout or "") + (proc.stderr or "")
+            ok = proc.returncode == 0 and "chrome" in out.lower()
+        except Exception as exc:
+            logger.warning(f"[ytdlp] falha ao listar impersonate targets: {exc}")
+            ok = False
     _IMPERSONATE_OK = ok
-    logger.warning(f"[ytdlp] impersonate disponivel: {ok}")
+    logger.warning(f"[ytdlp] impersonate {'LIGADO' if ok else 'DESLIGADO'} (env YTDLP_IMPERSONATE={os.environ.get('YTDLP_IMPERSONATE','')!r})")
     return ok
 
 
