@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Video, GraduationCap, Megaphone, MessageSquare,
   PenLine, FileText, BookOpen, Search, Clock,
-  Settings, LogOut, Sun, Moon, FolderOpen, ChevronRight, Layers, TvMinimalPlay, Radar,
+  Settings, LogOut, Sun, Moon, FolderOpen, ChevronRight, Layers, TvMinimalPlay, Radar, Sparkles,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { BarChart3 } from 'lucide-react'
@@ -135,13 +135,16 @@ export default function Sidebar() {
         <NavItem to="/lessons" icon={GraduationCap} label="Podcasts & Aulas" />
         <NavItem to="/ads" icon={Megaphone} label="Anúncios" />
         <NavItem to="/vsl" icon={TvMinimalPlay} label="VSL" />
-        <NavItem to="/raio-x" icon={Radar} label="Raio-X de Perfil" />
 
         <SectionLabel label="Copy" />
         <NavItem to="/copy-zone" icon={MessageSquare} label="Inteligência" />
         <NavItem to="/criar-copy" icon={PenLine} label="Escrever" />
         <NavItem to="/swipe" icon={Layers} label="Swipe File" />
         <NavItem to="/drafts" icon={FileText} label="Minhas Copys" />
+
+        <SectionLabel label="Análise" />
+        <NavItem to="/raio-x" icon={Radar} label="Raio-X de Perfil" />
+        <NavItem to="/brainstorm" icon={Sparkles} label="Brainstorm ADS" />
 
         <SectionLabel label="Pesquisa" />
         <NavItem to="/briefings" icon={BookOpen} label="Projeto" />

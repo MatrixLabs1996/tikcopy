@@ -27,6 +27,7 @@ import CopyEditorPage from './pages/CopyEditorPage'
 import SwipePage from './pages/SwipePage'
 import VSLPage from './pages/VSLPage'
 import ProfileAnalysisPage from './pages/ProfileAnalysisPage'
+import BrainstormPage from './pages/BrainstormPage'
 import AdminPage from './pages/AdminPage'
 import BriefingViewerPage from './pages/BriefingViewerPage'
 
@@ -100,6 +101,7 @@ export default function App() {
           <Route path="/criar-copy" element={<RequireRealProject pageName="Escrever"><CopyEditorPage /></RequireRealProject>} />
           <Route path="/swipe" element={<SwipePage />} />
           <Route path="/raio-x" element={<ProfileAnalysisPage />} />
+          <Route path="/brainstorm" element={<BrainstormPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/vsl" element={<VSLPage />} />
         </Route>

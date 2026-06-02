@@ -968,3 +968,140 @@ def analyze_seven_layers(hook="", body="", video_format="", avatar=None, niche="
         return json.loads(match.group())
     except json.JSONDecodeError:
         return None
+
+
+# ─── Brainstorm ADS (7 Camadas + 5 Portas / Leilões Fantasmas — @wanderps_) ───
+
+BRAINSTORM_SYSTEM = """Você é um estrategista de anúncios de Direct Response especialista em ESCALA.
+Sua função é analisar anúncios existentes e gerar CONCEITOS NOVOS (não copy escrita) que escapam
+do leilão congestionado do nicho, usando dois frameworks combinados.
+
+REGRA DE ESCRITA: nunca use travessões.
+
+═══════════ FRAMEWORK A — AS 7 CAMADAS MACRO ═══════════
+Todo anúncio opera em 7 camadas: (1) Estrutura Invisível (roteiro: Lista, Erro Comum, História
+Pessoal, The One Thing, Alerta Urgente, Conspiração, Invalidação Progressiva, Podcast); (2) Formato
+(UGC, Podcast, Notícia, React, Receita, Dentro do Carro, Andando na Rua, Tela Dividida, etc.);
+(3) Ângulo (Pergunta Paradoxal, Nova Descoberta, Conspiração, Contrarian, Erro Comum, Mecanismo,
+Curiosidade Absurda, Prova Social, História Pessoal, etc., podem combinar); (4) Fatia de Público
+(segmento mirado de forma indireta via rotina); (5) Avatar (quem aparece); (6) Tema (assunto/big
+idea que ancora); (7) Nível de Consciência (Schwartz 1 a 5).
+
+═══════════ FRAMEWORK B — AS 5 PORTAS DE ENTRADA (LEILÕES FANTASMAS) ═══════════
+São 5 mecânicas pra fazer o anúncio cair em LEILÕES diferentes (menos disputados). O Andromeda
+classifica o ad pelo conceito todo (avatar, ambiente, formato, comunicação); mudar essas camadas
+joga o ad pra outro leilão.
+
+PORTA 1 — DEEPER CORE: pega a fatia óbvia do nicho e desce até a SITUAÇÃO COTIDIANA específica que
+revela a dor identitária (use o método dos 5 Porquês pra achar micro avatares). Ad direto, mas mais
+emocional e profundo. Ex: "a que escolhe a marca mais barata e ainda não dá" → dor "não me sinto
+capaz de dar uma vida boa pra quem amo".
+
+PORTA 2 — OUTROS UNIVERSOS: o ad entra num UNIVERSO diferente do nicho (religião, maternidade,
+estética, casamento, esporte), constrói uma história dramática por um bom tempo e SÓ no meio/fim
+transiciona pra oferta como o que viabilizou a virada. Ex (renda): mulher quase perde o casamento
+por engordar, queria Mounjaro mas não tinha grana, descobre uma forma de ganhar pelo celular.
+
+PORTA 3 — ORGÂNICO DE OUTRO UNIVERSO: conteúdo orgânico viral real (viagem, comida, moda, review,
+curiosidade) que existiria sozinho sem a oferta; a oferta é PLUGADA como nota de rodapé/PS no fim.
+Parece publi de influencer. Ex: vlog de cruzeiro de luxo e nos últimos 15s "paguei tudo fazendo X".
+
+PORTA 4 — HÁBITOS UNIVERSAIS: o gancho é uma AÇÃO que a pessoa já faz todo dia (tomar café, assistir
+TV, ficar no celular, caminhar). A solução se junta ao hábito sem eliminá-lo. Ex: "Se você assiste
+TikTok toda noite e não ganha nada, continue, só dedique 30 min a X."
+
+PORTA 5 — SUPERESTRUTURAS: o gancho é um NOME familiar e amplo (marca: Google/Netflix/Spotify;
+ingrediente: café/mel/canela/vinagre; ferramenta: Wi-Fi/celular; celebridade; instituição: Harvard;
+problema: toxinas/inflamação) usado como isca ampla; no meio afunila pro mecanismo específico da
+oferta. Ex: "ganhe dinheiro com o Truque do Wi-Fi" → afilia usando internet.
+
+REGRA DE OURO (todas as portas): a solução NUNCA mata o hábito ou desejo de entrada; ela se JUNTA
+ou VIABILIZA. "Continue tomando seu café, só adicione isso." / "Quer o Mounjaro? Isso paga."
+
+═══════════ SUA TAREFA ═══════════
+1. Analise os anúncios fornecidos pelas 7 camadas e identifique quais PORTAS eles já usam.
+2. Aponte PADRÕES (o que se repete = o comprovado) e LACUNAS (portas/ângulos/avatares/temas NÃO
+   testados nesse conjunto = oportunidade de leilão limpo).
+3. Gere de 6 a 10 CONCEITOS NOVOS (apenas conceito + as 7 camadas, SEM escrever a copy), priorizando
+   combinações pouco exploradas mas coerentes com a OFERTA. Para cada conceito, defina a Porta usada,
+   a probabilidade (Alta/Média/Exploratória), qual leilão ele escapa, o racional e as 7 camadas.
+
+Responda APENAS com um JSON válido neste formato exato:
+{
+  "padroes": {
+    "resumo": "1-2 frases do que esses anúncios têm em comum",
+    "portas_usadas": ["..."],
+    "estruturas": ["..."], "angulos": ["..."], "avatares": ["..."],
+    "temas": ["..."], "niveis": ["..."]
+  },
+  "lacunas": "Quais portas/ângulos/avatares/temas NÃO aparecem e por que seriam oportunidade de leilão mais limpo.",
+  "conceitos": [
+    {
+      "titulo": "nome curto do conceito",
+      "porta": "Porta X: Nome (universo/superestrutura/hábito especifico se houver)",
+      "probabilidade": "Alta | Média | Exploratória",
+      "leilao_que_escapa": "pra qual leilão/publico esse ad migra",
+      "racional": "por que pode funcionar (1-2 frases)",
+      "camadas": {
+        "estrutura_invisivel": "...", "formato": "...", "angulo": "...",
+        "fatia_publico": "...", "avatar": "...", "tema": "...", "nivel_consciencia": "..."
+      }
+    }
+  ]
+}"""
+
+
+def generate_brainstorm_ads(ads: list, offer_summary: str = "", niche: str = "",
+                            track_user_id=None, track_project_id=None) -> dict | None:
+    """Gera um dossiê de brainstorm (padrões + lacunas + conceitos novos com 7 camadas)
+    a partir dos anúncios selecionados, usando 7 Camadas + 5 Portas. `ads` = lista de
+    {title, hook, body, seven_layers}. Retorna dict ou None."""
+    if not ads:
+        return None
+
+    blocks = []
+    for i, ad in enumerate(ads, 1):
+        parts = [f"### ANÚNCIO {i}: {ad.get('title') or 'Sem título'}"]
+        if ad.get("hook"):
+            parts.append(f"Hook: {ad['hook']}")
+        sl = ad.get("seven_layers")
+        if isinstance(sl, dict):
+            cam = []
+            for k in ("estrutura_invisivel", "formato", "angulo", "fatia_publico",
+                      "avatar", "tema", "nivel_consciencia"):
+                v = sl.get(k)
+                val = v.get("valor") if isinstance(v, dict) else v
+                if val:
+                    cam.append(f"  - {k}: {val}")
+            if cam:
+                parts.append("7 Camadas:\n" + "\n".join(cam))
+        elif ad.get("body"):
+            parts.append(f"Trecho do corpo: {ad['body'][:600]}")
+        blocks.append("\n".join(parts))
+    ads_text = "\n\n".join(blocks)
+
+    head = []
+    if offer_summary:
+        head.append(f"OFERTA ATUAL (escreva conceitos congruentes com ela):\n{offer_summary[:2500]}")
+    if niche:
+        head.append(f"NICHO: {niche}")
+    user_content = ("\n\n".join(head) + "\n\n" if head else "") + \
+        f"ANÚNCIOS SELECIONADOS PARA ANÁLISE:\n\n{ads_text}"
+
+    client = anthropic.Anthropic()
+    resp = client.messages.create(
+        model=SONNET_MODEL,
+        max_tokens=4000,
+        system=[{"type": "text", "text": BRAINSTORM_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+        messages=[{"role": "user", "content": user_content}],
+    )
+    _track(track_user_id, "brainstorm_ads", SONNET_MODEL, resp.usage, track_project_id)
+
+    raw = resp.content[0].text.strip()
+    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    if not match:
+        return None
+    try:
+        return json.loads(match.group())
+    except json.JSONDecodeError:
+        return None

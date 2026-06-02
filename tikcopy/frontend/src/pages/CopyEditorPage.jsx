@@ -1355,6 +1355,45 @@ export default function CopyEditorPage() {
       sessionStorage.removeItem('swipe_reference')
     }
 
+    // Conceito vindo do Brainstorm ADS → vira referência estratégica + pré-preenche meta.
+    const rawConcept = sessionStorage.getItem('brainstorm_concept')
+    if (rawConcept) {
+      try {
+        const c = JSON.parse(rawConcept)
+        const cam = c.camadas || {}
+        const val = (x) => (x && typeof x === 'object' ? x.valor : x) || ''
+        const lines = [
+          `## Conceito: ${c.titulo || 'Brainstorm'}`,
+          c.porta ? `Porta: ${c.porta}` : '',
+          c.leilao_que_escapa ? `Leilão que escapa: ${c.leilao_que_escapa}` : '',
+          c.racional ? `Racional: ${c.racional}` : '',
+          '',
+          '## Estratégia (7 Camadas)',
+          val(cam.estrutura_invisivel) && `- Estrutura Invisível: ${val(cam.estrutura_invisivel)}`,
+          val(cam.formato) && `- Formato: ${val(cam.formato)}`,
+          val(cam.angulo) && `- Ângulo: ${val(cam.angulo)}`,
+          val(cam.fatia_publico) && `- Fatia de Público: ${val(cam.fatia_publico)}`,
+          val(cam.avatar) && `- Avatar: ${val(cam.avatar)}`,
+          val(cam.tema) && `- Tema: ${val(cam.tema)}`,
+          val(cam.nivel_consciencia) && `- Nível de Consciência: ${val(cam.nivel_consciencia)}`,
+        ].filter(Boolean)
+        setSelectedRef({
+          id: `brainstorm-${Date.now()}`,
+          type: 'transcript_ad',
+          content: lines.join('\n'),
+          metadata: { title: `Conceito: ${c.titulo || 'Brainstorm'}`, source: 'brainstorm' },
+        })
+        setMeta((prev) => ({
+          ...prev,
+          angle: val(cam.angulo) || prev.angle,
+          format: val(cam.formato) || prev.format,
+          avatar: val(cam.avatar) || prev.avatar,
+        }))
+        setAiOpen(true)
+      } catch {}
+      sessionStorage.removeItem('brainstorm_concept')
+    }
+
     // Hook vindo do Swipe (botão "Usar hook na copy") → pré-preenche o primeiro hook
     const prefillHook = sessionStorage.getItem('prefill_hook')
     if (prefillHook) {
