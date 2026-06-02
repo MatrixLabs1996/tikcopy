@@ -206,11 +206,16 @@ def _parse_friendly_error(stderr: str, url: str) -> str:
     if "geo" in s and ("block" in s or "restrict" in s):
         return "Vídeo bloqueado pela região do servidor."
 
-    # Último recurso: pega só a primeira linha de ERROR
+    # Pega a primeira linha de ERROR (ignora WARNINGs, que não são falha)
     for line in stderr.splitlines():
         if line.strip().startswith("ERROR:"):
             return line.strip().lstrip("ERROR:").strip()[:200]
-    return stderr.strip()[:200] or "Falha ao baixar áudio."
+    # Só warnings / nada útil → mensagem genérica (não mostra o WARNING cru de -f best)
+    meaningful = [l.strip() for l in stderr.splitlines()
+                  if l.strip() and not l.strip().upper().startswith("WARNING:")]
+    if meaningful:
+        return meaningful[-1][:200]
+    return "Não consegui baixar o áudio deste vídeo (formato indisponível ou bloqueado). Tente o Upload de arquivo."
 
 
 def _run_ytdlp(args: list[str], extra_args: list[str] = None) -> subprocess.CompletedProcess:
@@ -360,6 +365,7 @@ def download_audio(url: str, job_id: str) -> tuple[str, str, dict]:
         except Exception as exc:
             logger.warning(f"[ytdlp] Fallback tikwm.com falhou: {exc}")
 
+    logger.warning(f"[ytdlp] download falhou pra {url}. stderr (final): {(last_stderr or '')[:600]}")
     raise RuntimeError(_parse_friendly_error(last_stderr, url))
 
 
