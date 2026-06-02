@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { Plus, Save, X, ChevronRight, ChevronDown, BookOpen, Megaphone, FileText, RefreshCw, User, Download, Check, ListTree, Loader2, Target, Zap } from 'lucide-react'
+import { Plus, Save, X, ChevronRight, ChevronDown, BookOpen, Megaphone, FileText, RefreshCw, User, Download, Check, ListTree, Loader2, Target, Zap, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import useAppStore from '../stores/useAppStore'
@@ -32,6 +32,64 @@ const REF_FILTERS = [
   { id: 'ad',      label: 'Anúncios',     color: 'var(--accent)', icon: Megaphone },
   { id: 'swipe',   label: 'Minhas Copys',  color: 'var(--accent)', icon: BookOpen  },
 ]
+
+// Calculadora de tempo do body. Ritmo de locução fixo ~150 ppm ≈ 900 caracteres/min
+// (usado pros DOIS: o máximo de caracteres pro tempo alvo e o tempo estimado ao vivo,
+// pra baterem certinho no limite). Conta caracteres do texto puro do body.
+const CHARS_PER_MIN = 900
+function _fmtClock(totalSec) {
+  const s = Math.max(0, Math.round(totalSec))
+  const m = Math.floor(s / 60)
+  const r = s % 60
+  return `${m}:${String(r).padStart(2, '0')}`
+}
+function BodyTimeMeter({ body, stripHtml, targetMin, onChangeTarget }) {
+  const plain = (stripHtml ? stripHtml(body || '') : (body || '')).replace(/\s+/g, ' ').trim()
+  const chars = plain.length
+  const estSec = (chars / CHARS_PER_MIN) * 60
+  const tMin = parseFloat(String(targetMin).replace(',', '.'))
+  const hasTarget = !isFinite(tMin) ? false : tMin > 0
+  const maxChars = hasTarget ? Math.round(tMin * CHARS_PER_MIN) : 0
+  const targetSec = hasTarget ? tMin * 60 : 0
+  const over = hasTarget && chars > maxChars
+  const pct = hasTarget && maxChars > 0 ? Math.min(100, (chars / maxChars) * 100) : 0
+  const accent = over ? '#ef4444' : 'var(--accent)'
+  return (
+    <div style={{ marginBottom: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: 'var(--text-secondary)' }}>
+          <Clock size={13} /> Tempo alvo
+        </span>
+        <input
+          type="number" min="0" step="0.5" placeholder="ex: 2"
+          value={targetMin}
+          onChange={(e) => onChangeTarget(e.target.value)}
+          style={{
+            width: '64px', padding: '4px 8px', borderRadius: '6px', fontSize: '12px',
+            background: 'var(--bg-input)', border: '1px solid var(--border-default)',
+            color: 'var(--text-primary)', fontFamily: 'var(--font)',
+          }}
+        />
+        <span>min</span>
+        {hasTarget && (
+          <span style={{ color: 'var(--text-secondary)' }}>
+            máx ~<strong style={{ color: 'var(--text-primary)' }}>{maxChars.toLocaleString('pt-BR')}</strong> caracteres
+          </span>
+        )}
+        <span style={{ marginLeft: 'auto', color: over ? '#ef4444' : 'var(--text-secondary)', fontWeight: over ? 600 : 400 }}>
+          {chars.toLocaleString('pt-BR')} caracteres · ≈ {_fmtClock(estSec)}
+          {hasTarget && ` / ${_fmtClock(targetSec)}`}
+          {over && ` · passou ${(chars - maxChars).toLocaleString('pt-BR')}`}
+        </span>
+      </div>
+      {hasTarget && (
+        <div style={{ marginTop: '7px', height: '4px', borderRadius: '4px', background: 'var(--border-subtle)', overflow: 'hidden' }}>
+          <div style={{ width: `${pct}%`, height: '100%', background: accent, transition: 'width 0.15s ease' }} />
+        </div>
+      )}
+    </div>
+  )
+}
 
 // Converte um draft finalizado de Meus Anúncios em formato de referência
 // (mesmo formato de "Bater controle": só hooks validados + body bem formatado)
@@ -1053,6 +1111,9 @@ export default function CopyEditorPage() {
   const [hooks, setHooks] = usePersistedState(`${persistKey}:hooks`, [{ id: Date.now(), html: '' }])
   const [body, setBody] = usePersistedState(`${persistKey}:body`, '')
   const [bodyComments, setBodyComments] = usePersistedState(`${persistKey}:bodyComments`, [])
+  // Calculadora de tempo do body: minutos alvo → máx de caracteres (e tempo ao vivo
+  // enquanto digita). Ritmo fixo ~150 ppm ≈ 900 caracteres/min de locução.
+  const [bodyTargetMin, setBodyTargetMin] = usePersistedState(`${persistKey}:bodyTargetMin`, '')
   // bodyInitial: usado pelo RichEditor SÓ no mount (componente uncontrolled).
   // Por isso inicializamos com o body persistido — assim na remontagem (volta da outra aba)
   // o editor já aparece preenchido.
@@ -1926,6 +1987,12 @@ export default function CopyEditorPage() {
               onChangeSteps={(arr) => setStructureGuide(g => ({ ...g, body: arr }))}
             />
           )}
+          <BodyTimeMeter
+            body={body}
+            stripHtml={stripHtml}
+            targetMin={bodyTargetMin}
+            onChangeTarget={setBodyTargetMin}
+          />
           <RichEditor
             key={`${editingId || 'new'}-${editorVersion}`}
             onChange={setBody}
