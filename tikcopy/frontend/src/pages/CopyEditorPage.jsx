@@ -39,11 +39,13 @@ const REF_FILTERS = [
 const CHARS_PER_MIN = 900
 function _fmtClock(totalSec) {
   const s = Math.max(0, Math.round(totalSec))
-  const m = Math.floor(s / 60)
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
   const r = s % 60
-  return `${m}:${String(r).padStart(2, '0')}`
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`
 }
 function BodyTimeMeter({ body, stripHtml, targetMin, onChangeTarget }) {
+  const [open, setOpen] = useState(false)
   const plain = (stripHtml ? stripHtml(body || '') : (body || '')).replace(/\s+/g, ' ').trim()
   const chars = plain.length
   const estSec = (chars / CHARS_PER_MIN) * 60
@@ -54,12 +56,42 @@ function BodyTimeMeter({ body, stripHtml, targetMin, onChangeTarget }) {
   const over = hasTarget && chars > maxChars
   const pct = hasTarget && maxChars > 0 ? Math.min(100, (chars / maxChars) * 100) : 0
   const accent = over ? '#ef4444' : 'var(--accent)'
+
+  // Fechado: só o ícone do relógio. Clica pra abrir a calculadora.
+  if (!open) {
+    return (
+      <div style={{ marginBottom: '10px' }}>
+        <button
+          onClick={() => setOpen(true)}
+          title="Calculadora de tempo (minutos → máx de caracteres)"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            padding: '5px 8px', borderRadius: '6px', cursor: 'pointer',
+            background: 'transparent', border: '1px solid var(--border-default)',
+            color: over ? '#ef4444' : 'var(--text-muted)', fontFamily: 'var(--font)', fontSize: '12px',
+          }}
+        >
+          <Clock size={14} />
+          {hasTarget && <span>{_fmtClock(estSec)} / {_fmtClock(targetSec)}</span>}
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div style={{ marginBottom: '10px' }}>
       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: 'var(--text-secondary)' }}>
-          <Clock size={13} /> Tempo alvo
-        </span>
+        <button
+          onClick={() => setOpen(false)}
+          title="Recolher"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 6px',
+            borderRadius: '6px', cursor: 'pointer', background: 'transparent',
+            border: 'none', color: 'var(--text-secondary)', fontFamily: 'var(--font)', fontSize: '12px',
+          }}
+        >
+          <Clock size={14} /> Tempo alvo
+        </button>
         <input
           type="number" min="0" step="0.5" placeholder="ex: 2"
           value={targetMin}
