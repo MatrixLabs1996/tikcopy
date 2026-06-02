@@ -1042,7 +1042,7 @@ REGRAS DE CONVERSA:
             user_id=current_user.id, operation="chat", model=model,
             usage=resp.usage, project_id=body.project_id,
         )
-        reply = resp.content[0].text.strip()
+        reply = _no_dashes(resp.content[0].text.strip())
         return {"reply": reply}
     except Exception as exc:
         logger.exception("[ai/chat] falhou")

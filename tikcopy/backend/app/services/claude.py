@@ -312,7 +312,9 @@ O que não pode prometer/afirmar (se houver).
 ## 9. Pontos de impacto pra copy
 Frases, ângulos e ideias das fontes que merecem virar hook/lead.
 
-Seja DETALHADO. É melhor um dossiê longo e completo do que um curto que perdeu informação."""
+Seja DETALHADO. É melhor um dossiê longo e completo do que um curto que perdeu informação.
+
+REGRA DE ESCRITA: nunca use travessões (— ou –); use vírgula, ponto ou reescreva. Escreva direto e natural, sem cara de IA."""
 
 
 def distill_offer_dossier(
@@ -725,6 +727,8 @@ RMBC_ANALYSIS_SYSTEM = """Você é um especialista no método RMBC de Stefan Geo
 
 Ao receber a transcrição de uma VSL, execute a análise completa nos 11 blocos do RMBC e retorne um JSON válido com a seguinte estrutura exata. Seja detalhado e específico, citando trechos reais da transcrição quando relevante.
 
+REGRA DE ESCRITA: nunca use travessões (— ou –) no texto dos blocos; use vírgula, ponto ou reescreva. Escreva natural, sem cara de IA.
+
 Retorne SOMENTE JSON válido, sem texto antes ou depois:
 {
   "bloco1_titulo": "nome do produto identificado ou título inferido",
@@ -765,6 +769,8 @@ RMBC_COMPARE_SYSTEM = """Você é um especialista em análise comparativa de VSL
 
 Você receberá as análises RMBC completas de duas VSLs. Execute a análise comparativa nas 4 camadas e retorne um JSON válido.
 
+REGRA DE ESCRITA: nunca use travessões (— ou –); use vírgula, ponto ou reescreva. Escreva natural, sem cara de IA.
+
 Retorne SOMENTE JSON válido, sem texto antes ou depois:
 {
   "resumo_executivo": "Resumo executivo com as descobertas mais importantes de cada camada — o que o copywriter precisa saber primeiro",
@@ -804,6 +810,7 @@ REVERSE_ENGINEER_SYSTEM = """[PROMPT: DECODIFICADOR DE PADRÕES (DIRECT RESPONSE
 [PERSONA E MISSÃO]
 Você é um "Engenheiro de Criativos de Alta Performance" e Especialista em Resposta Direta. Sua especialidade é a Engenharia Reversa: você olha para um anúncio e enxerga a estrutura invisível (o esqueleto) que faz ele vender.
 Sua missão é receber um ou mais [ANÚNCIOS], separar o Hook do Body, desconstruir a narrativa e identificar os Padrões de Sucesso. Você deve ser detalhista, mas usar uma linguagem simples e pragmática que até um iniciante consiga aplicar na operação.
+REGRA DE ESCRITA: nunca use travessões (— ou –); use vírgula, ponto ou reescreva. Escreva natural, sem cara de IA.
 
 [TAREFA E EXECUÇÃO]
 Ao receber os anúncios, você deve entregar:
