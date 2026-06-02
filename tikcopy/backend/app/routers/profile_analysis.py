@@ -1,20 +1,19 @@
 """
-Raio-X de Perfil — lista os vídeos de um perfil (YouTube), pega os mais virais
-(por views), baixa + transcreve SÓ esses, e a IA cruza tudo num documento de
-padrões ("o que funciona neste perfil").
+Raio-X de Perfil — lista os vídeos mais virais de um perfil (YouTube) e entrega
+thumb + headline (título) + link + comentários. A IA cruza as headlines e a voz
+da audiência (comentários) num documento de padrões. NÃO baixa nem transcreve vídeo.
 
 Pipeline assíncrono por job (mesmo padrão de transcription.py).
 """
 import time
 import uuid
 import logging
-from pathlib import Path
 from urllib.parse import urlparse
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 
 from app.models.schemas import ProfileAnalysisRequest
 from app.middleware.auth import get_current_user
-from app.services import ytdlp, assemblyai, claude, youtube_api
+from app.services import ytdlp, claude, youtube_api
 from app.utils.jobs import cleanup_jobs
 
 logger = logging.getLogger(__name__)
@@ -78,64 +77,24 @@ def _run_profile_pipeline(job_id: str, url: str, top_n: int, niche: str | None, 
                 else "Nenhum vídeo encontrado neste perfil."
             )
 
-        # ── 2. Baixar + transcrever só os top ──
+        # ── 2. Monta a lista dos melhores (thumb, headline, link) — SEM baixar/transcrever ──
+        # O título do vídeo É a headline. A análise vem das headlines + comentários (voz da audiência).
         analyzed = []
-        fail_reasons = []
-        for idx, v in enumerate(top, 1):
-            _jobs[job_id] = {
-                "status": "transcribing",
-                "_ts": time.time(),
-                "progress": {"current": idx, "total": len(top), "title": v.get("title")},
-            }
-            try:
-                title = v.get("title")
-                metrics = {"views": ytdlp._fmt_num(v.get("view_count"))}
-                # 1) Tenta a LEGENDA do YouTube (sem baixar — fura bloqueio de datacenter, de graça)
-                transcript = ytdlp.fetch_youtube_transcript(v["url"])
-                # 2) Fallback: baixa o áudio e transcreve (AssemblyAI) se não tiver legenda
-                if not transcript:
-                    tmp_id = f"{job_id}-{idx}"
-                    audio_path, dl_title, dl_metrics = ytdlp.download_audio(v["url"], tmp_id)
-                    transcript = assemblyai.transcribe_file(audio_path, track_user_id=user_id, operation="raiox_transcricao")
-                    try:
-                        Path(audio_path).unlink()
-                    except OSError:
-                        pass
-                    title = dl_title or title
-                    metrics = dl_metrics or metrics
-                if not transcript:
-                    continue
-                if translate:
-                    transcript = claude.translate_to_portuguese(transcript, track_user_id=user_id)
-                transcript_paragraphed = claude._break_into_paragraphs(transcript)
-                split = claude.split_hook_body(transcript)
-                if not author:
-                    author = (metrics or {}).get("author") or ""
-                analyzed.append({
-                    "id": v.get("id"),
-                    "title": title or v.get("title"),
-                    "url": v["url"],
-                    "metrics": metrics or {"views": ytdlp._fmt_num(v.get("view_count"))},
-                    "thumbnail": v.get("thumbnail"),
-                    "description": v.get("description") or "",
-                    "velocity": v.get("velocity"),
-                    "hook": split.get("hook", ""),
-                    "body": split.get("body", ""),
-                    "transcript": transcript_paragraphed,
-                    "top_comments": [],
-                })
-            except Exception as exc:
-                # Vídeo que falhar (bloqueio/privado) é pulado — não derruba o job
-                logger.warning(f"[raiox] vídeo {idx} falhou: {exc}")
-                fail_reasons.append(str(exc))
-                continue
-
-        if not analyzed:
-            detail = (fail_reasons[0][:200] if fail_reasons else "")
-            raise ValueError(
-                "Não consegui transcrever nenhum dos vídeos virais. "
-                + (f"Motivo: {detail}" if detail else "Eles podem estar bloqueados ou sem legenda.")
-            )
+        for v in top:
+            analyzed.append({
+                "id": v.get("id"),
+                "title": v.get("title") or "Sem título",   # headline
+                "url": v["url"],
+                "metrics": {"views": ytdlp._fmt_num(v.get("view_count"))},
+                "thumbnail": v.get("thumbnail"),
+                "description": v.get("description") or "",
+                "velocity": v.get("velocity"),
+                "top_comments": [],
+            })
+        if not author:
+            import re as _re
+            mm = _re.search(r'@([A-Za-z0-9_.\-]+)', url or '')
+            author = mm.group(1) if mm else (niche or "Perfil")
 
         # ── 3. Comentários (voz da audiência) — lê TUDO (paginado, com teto) ──
         comment_pool = []

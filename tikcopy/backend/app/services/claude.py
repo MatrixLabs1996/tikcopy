@@ -386,90 +386,67 @@ def distill_offer_dossier(
     return out
 
 
-PROFILE_PATTERNS_SYSTEM = """Você é um analista sênior de conteúdo viral e copywriting de resposta direta. Recebe a transcrição dos vídeos MAIS VIRAIS de um perfil (já filtrados por views) e sua tarefa é identificar os PADRÕES que se repetem e fazem esse perfil performar.
+PROFILE_PATTERNS_SYSTEM = """Você é um analista sênior de conteúdo viral e copywriting de resposta direta. Recebe os TÍTULOS (headlines) dos vídeos MAIS VIRAIS de um perfil do YouTube, já ordenados por views. Cada título É a headline que fez o vídeo ser clicado. Sua tarefa é achar os PADRÕES de headline que fazem esse perfil viralizar.
 
-Analise os vídeos EM CONJUNTO (não um por um isolado). Procure o que se repete, o que é fórmula, o que é assinatura do criador.
+Analise os títulos EM CONJUNTO. Procure o que se repete, a fórmula, a assinatura do criador.
 
 Produza um documento em MARKDOWN com estas seções:
 
 ## Visão geral do perfil
-Quem é, sobre o que fala, tom de voz, e o que (na sua leitura) explica a viralização.
+Quem é, sobre o que fala, e o que nas headlines explica a viralização.
 
-## Padrões de Hook
-Os ganchos de abertura que se repetem. Liste os TIPOS de hook usados (pergunta, choque, promessa, polêmica, etc) com exemplos reais extraídos das transcrições. Aponte a fórmula recorrente dos primeiros 3 segundos.
+## Padrões de Headline
+Os TIPOS de gancho que se repetem nos títulos (pergunta, choque, número, promessa, polêmica, curiosidade, contrarian, prova, etc). Para cada tipo, dê exemplos REAIS entre aspas e descreva a fórmula recorrente.
 
-## Estrutura recorrente
-O esqueleto que se repete do início ao fim (abertura, desenvolvimento, virada, fechamento). Descreva o passo a passo.
+## Palavras e gatilhos
+Palavras de poder, números e gatilhos emocionais que mais aparecem nos títulos.
 
-## Ganchos visuais e de retenção
-Elementos que seguram a atenção (loops abertos, listas, contagem, provas, mudanças de cena sugeridas pela fala).
-
-## Emoções dominantes
-As emoções que o conteúdo ativa com mais força e como faz isso.
-
-## Padrão de CTA / fechamento
-Como os vídeos terminam e o que pedem do espectador.
+## Estrutura dos títulos
+O esqueleto recorrente (ex: número + promessa + prazo; pergunta + curiosidade; nome chiclete + benefício). Descreva os moldes.
 
 ## Temas e ângulos que se repetem
-Os assuntos e ângulos que mais aparecem nos virais.
+Os assuntos e ângulos mais frequentes entre os virais.
 
 ## Resumo do que funciona
-Uma lista objetiva e acionável de 5 a 10 aprendizados que um copywriter pode aplicar HOJE, no estilo "faça X". Direto ao ponto.
+Lista objetiva de 5 a 10 aprendizados acionáveis, no estilo "faça X", que um copywriter aplica HOJE pra escrever headlines no mesmo padrão.
 
 Regras de escrita:
-- Sempre cite exemplos REAIS extraídos das transcrições (entre aspas).
-- Seja concreto e específico. Nada de generalidade vazia.
-- NÃO use travessões (— ou –) em nenhum texto. Use vírgula, ponto ou reescreva a frase.
+- Sempre cite exemplos REAIS dos títulos (entre aspas).
+- Seja concreto e específico, nada de generalidade vazia.
+- Nunca use travessões (— ou –). Use vírgula, ponto ou reescreva.
 - Escreva em português do Brasil."""
 
 
 def analyze_profile_patterns(videos: list[dict], author: str = "", track_user_id: str | None = None) -> str:
-    """Cruza as transcrições dos top vídeos virais de um perfil e produz um
-    documento de padrões ("o que funciona neste perfil") em markdown.
-
-    `videos`: lista de {title, url, metrics, hook, transcript}.
-    """
+    """Analisa as HEADLINES (títulos) dos top vídeos virais de um perfil e produz um
+    documento de padrões de headline em markdown. `videos`: lista de {title, metrics}."""
     if not videos:
         return ""
 
     client = anthropic.Anthropic()
 
-    MAX_PER_VIDEO = 12000  # cap por transcrição pra não estourar contexto
-    blocks = []
+    lines = []
     for i, v in enumerate(videos, 1):
         m = v.get("metrics") or {}
         views = m.get("views") or "—"
-        likes = m.get("likes") or "—"
-        transcript = (v.get("transcript") or "")[:MAX_PER_VIDEO]
-        hook = v.get("hook") or ""
-        head = (
-            f"VÍDEO {i} — {v.get('title') or 'Sem título'}\n"
-            f"(views: {views} | likes: {likes})"
-        )
-        body = (f"HOOK: {hook}\n\n" if hook else "") + f"TRANSCRIÇÃO:\n{transcript}"
-        blocks.append(f"{head}\n\n{body}")
+        lines.append(f'{i}. "{v.get("title") or "Sem título"}"  (views: {views})')
 
     user_content = (
         f"PERFIL ANALISADO: {author or '—'}\n"
         f"TOTAL DE VÍDEOS VIRAIS: {len(videos)}\n\n"
-        "═══════════════════\n\n"
-        + "\n\n═══════════════════\n\n".join(blocks)
-        + "\n\n═══════════════════\n\n"
-        "TAREFA: Produza o documento de padrões completo, seguindo as seções definidas."
+        "HEADLINES (títulos) DOS VÍDEOS MAIS VIRAIS, em ordem de views:\n\n"
+        + "\n".join(lines)
+        + "\n\nTAREFA: Produza o documento de padrões de headline completo, seguindo as seções definidas."
     )
 
-    with client.messages.stream(
+    resp = client.messages.create(
         model=SONNET_MODEL,
-        max_tokens=16000,
+        max_tokens=6000,
         system=PROFILE_PATTERNS_SYSTEM,
         messages=[{"role": "user", "content": user_content}],
-    ) as stream:
-        final = stream.get_final_message()
-    out = final.content[0].text.strip()
-    if getattr(final, "stop_reason", None) == "max_tokens":
-        logger.warning("[claude] analyze_profile_patterns atingiu max_tokens — documento pode ter sido cortado.")
-    _track(track_user_id, "raiox_padroes", SONNET_MODEL, final.usage)
-    return out
+    )
+    _track(track_user_id, "raiox_padroes", SONNET_MODEL, resp.usage)
+    return resp.content[0].text.strip()
 
 
 AUDIENCE_VOICE_SYSTEM = """Você é um pesquisador de copywriting de resposta direta especialista em VOZ DO CLIENTE. Recebe os comentários reais (do YouTube) dos vídeos mais virais de um nicho e sua tarefa é minerar esses comentários pra extrair a matéria-prima que um copywriter usa pra escrever copy que converte.
