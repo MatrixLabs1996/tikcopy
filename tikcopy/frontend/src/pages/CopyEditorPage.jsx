@@ -909,7 +909,7 @@ function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelec
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {showTabs && (
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-default)', flexShrink: 0, background: 'var(--bg-elevated)' }}>
-          {writeMode === 'hibrido' && <TabBtn id="chat" label="Chat IA" color="var(--accent)" />}
+          {writeMode === 'hibrido' && <TabBtn id="chat" label="Chat CopyX" color="var(--accent)" />}
           <TabBtn id="ref" label="Referência" color="var(--accent)" />
           {hasRefLayers && <TabBtn id="7camadas" label="✦ 7 Camadas" color="var(--accent)" />}
           {hasBrainstorm && <TabBtn id="brainstorm" label="✦ Brainstorm" color="var(--accent)" />}

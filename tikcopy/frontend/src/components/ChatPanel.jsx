@@ -77,7 +77,7 @@ export default function ChatPanel({ buildContext, chatKey }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Sparkles size={13} style={{ color: 'var(--accent)' }} />
           <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            Chat com IA
+            Chat CopyX
           </div>
         </div>
         {messages.length > 0 && (
@@ -129,7 +129,7 @@ export default function ChatPanel({ buildContext, chatKey }) {
               color: m.role === 'user' ? 'var(--accent)' : 'var(--accent)',
               marginBottom: '4px', textTransform: 'uppercase',
             }}>
-              {m.role === 'user' ? 'Você' : 'IA'}
+              {m.role === 'user' ? 'Você' : 'CopyX'}
             </div>
             <div style={{
               fontSize: '12px', lineHeight: 1.6, color: 'var(--text-primary)',
