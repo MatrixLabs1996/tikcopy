@@ -21,11 +21,26 @@ _jobs: dict = {}
 
 def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | None, niche: str | None, translate: bool = False):
     try:
-        _jobs[job_id] = {"status": "downloading"}
-        audio_path, title, metrics = ytdlp.download_audio(url, job_id)
+        transcript = None
+        title = None
+        metrics = {}
+        audio_path = None
 
-        _jobs[job_id] = {"status": "transcribing"}
-        transcript = assemblyai.transcribe_file(audio_path, track_user_id=user_id, operation="transcricao_organico", track_project_id=project_id)
+        # YouTube: tenta a LEGENDA primeiro (sem baixar — fura bloqueio de datacenter, de graça)
+        if ytdlp.is_youtube(url):
+            _jobs[job_id] = {"status": "transcribing"}
+            cap = ytdlp.fetch_youtube_transcript(url)
+            if cap:
+                transcript = cap
+                title = ytdlp.youtube_title(url) or "Vídeo do YouTube"
+
+        # Sem legenda (ou TikTok/Instagram): baixa o áudio e transcreve (AssemblyAI)
+        if not transcript:
+            _jobs[job_id] = {"status": "downloading"}
+            audio_path, title, metrics = ytdlp.download_audio(url, job_id)
+            _jobs[job_id] = {"status": "transcribing"}
+            transcript = assemblyai.transcribe_file(audio_path, track_user_id=user_id, operation="transcricao_organico", track_project_id=project_id)
+
         if not transcript:
             raise ValueError("Transcrição retornou vazia.")
 
@@ -58,10 +73,11 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
         )
         save_transcript_to_memory(project_id, "transcript_organic", title, org_content, {"source_url": url, "niche": niche})
 
-        try:
-            Path(audio_path).unlink()
-        except OSError:
-            pass
+        if audio_path:
+            try:
+                Path(audio_path).unlink()
+            except OSError:
+                pass
 
         _jobs[job_id] = {
             "status": "done",

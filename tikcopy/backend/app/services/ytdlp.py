@@ -56,6 +56,23 @@ def fetch_youtube_transcript(url: str) -> str | None:
         logger.warning(f"[ytdlp] legenda indisponível pra {vid}: {type(exc).__name__}: {exc}")
         return None
 
+
+def is_youtube(url: str) -> bool:
+    u = (url or "").lower()
+    return "youtube.com" in u or "youtu.be" in u
+
+
+def youtube_title(url: str) -> str | None:
+    """Título do vídeo via oEmbed (endpoint público, não bloqueia em datacenter)."""
+    try:
+        import requests
+        r = requests.get("https://www.youtube.com/oembed", params={"url": url, "format": "json"}, timeout=10)
+        if r.ok:
+            return (r.json().get("title") or "").strip() or None
+    except Exception:
+        pass
+    return None
+
 TEMP_DIR = Path(__file__).parent.parent.parent / "temp"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -198,22 +215,21 @@ def download_audio(url: str, job_id: str) -> tuple[str, str, dict]:
 
     # Estratégias em ordem (mais conservadoras → mais agressivas)
     # Cada item é uma lista de args extras pro yt-dlp
+    # OBS: NÃO usamos --cookies-from-browser (Brave/Chrome) porque no servidor
+    # (Railway/Linux) não existe navegador instalado — só gera erro e desperdiça
+    # tentativa. Quando precisar de cookies, use o arquivo cookies.txt.
     if is_tiktok:
-        # TikTok: PRIORIZA cookies.txt + impersonate (sem cookies não rola)
+        # TikTok: PRIORIZA cookies.txt + impersonate (sem cookies raramente rola)
         if cookies:
             attempt_strategies = [
                 cookies + ["--impersonate", "Chrome"],
                 cookies + ["--impersonate", "Safari"],
                 cookies,
-                ["--impersonate", "Chrome", "--cookies-from-browser", "brave"],
-                ["--impersonate", "Chrome", "--cookies-from-browser", "chrome"],
                 ["--impersonate", "Chrome"],
                 [],
             ]
         else:
             attempt_strategies = [
-                ["--impersonate", "Chrome", "--cookies-from-browser", "brave"],
-                ["--impersonate", "Chrome", "--cookies-from-browser", "chrome"],
                 ["--impersonate", "Chrome"],
                 ["--impersonate", "Safari"],
                 [],
@@ -226,7 +242,6 @@ def download_audio(url: str, job_id: str) -> tuple[str, str, dict]:
         attempt_strategies.extend([
             [],
             ["--impersonate", "Chrome"],
-            ["--impersonate", "Chrome", "--cookies-from-browser", "brave"],
         ])
 
     # ── 1. Metadata ──
