@@ -35,7 +35,7 @@ export default function Topbar() {
           onClick={() => setOpen((o) => !o)}
           style={{
             display: 'flex', alignItems: 'center', gap: '6px',
-            background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
+            background: 'var(--bg-base)', border: '1px solid var(--border-strong)',
             borderRadius: '6px', padding: '5px 10px 5px 11px',
             fontSize: '12px', color: 'var(--text-secondary)',
             cursor: 'pointer', fontFamily: 'var(--font)',
@@ -103,8 +103,8 @@ export default function Topbar() {
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: '30px', height: '30px', borderRadius: '7px',
-            background: 'transparent', border: '1px solid var(--border-default)',
-            color: 'var(--text-muted)', cursor: 'pointer',
+            background: 'var(--bg-base)', border: '1px solid var(--border-strong)',
+            color: 'var(--text-secondary)', cursor: 'pointer',
           }}
         >
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
