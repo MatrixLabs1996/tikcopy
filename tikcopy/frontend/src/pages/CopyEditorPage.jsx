@@ -1172,6 +1172,26 @@ export default function CopyEditorPage() {
   // Persistência: chave depende se tá editando draft existente ou novo
   // Sobrevive a trocar de aba (Escrever Transcrever Swipe etc.) E refresh do browser.
   const persistKey = editingId ? `copyEditor:edit:${editingId}` : 'copyEditor:new'
+
+  // Chat por anúncio: cada anúncio novo tem o PRÓPRIO chat (id de rascunho único),
+  // pra não misturar conversa entre anúncios. Ao finalizar/salvar, a conversa migra
+  // pro id real do anúncio. "Novo" gera um id novo (chat limpo).
+  const defaultDraftChatId = useMemo(() => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, [])
+  const [draftChatId, setDraftChatId] = usePersistedState('copyEditor:new:draftChatId', defaultDraftChatId)
+  const chatKey = editingId ? `copyEditor:edit:${editingId}` : `copyEditor:new:${draftChatId}`
+
+  // Copia o histórico do chat de uma chave pra outra (no save: rascunho → id real).
+  const migrateChat = (fromKey, toKey) => {
+    try {
+      const h = localStorage.getItem(`${fromKey}:history`)
+      if (h) localStorage.setItem(`${toKey}:history`, h)
+    } catch { /* ignore */ }
+  }
+  // Zera o chat do rascunho atual e gera um id novo (chat limpo pro próximo anúncio).
+  const newDraftChat = () => {
+    try { localStorage.removeItem(`copyEditor:new:${draftChatId}:history`) } catch { /* ignore */ }
+    setDraftChatId(`${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
+  }
   const [meta, setMeta] = usePersistedState(`${persistKey}:meta`, emptyMeta())
   const [briefing, setBriefing] = usePersistedState(`${persistKey}:briefing`, { ...EMPTY_BRIEFING })
   const [hooks, setHooks] = usePersistedState(`${persistKey}:hooks`, [{ id: Date.now(), html: '' }])
@@ -1482,6 +1502,7 @@ export default function CopyEditorPage() {
       `${persistKey}:structure`,
       `${persistKey}:structureVisible`,
     )
+    newDraftChat()   // chat limpo pro próximo anúncio (não herda conversa do anterior)
     if (editingId) setSearchParams({})
   }
 
@@ -1620,11 +1641,14 @@ export default function CopyEditorPage() {
         toast.success(status === 'final' ? 'AD finalizado atualizado!' : 'Rascunho atualizado!')
       } else {
         // Cria novo
-        await api.post('/drafts', {
+        const res = await api.post('/drafts', {
           title,
           project_id: activeProject?.id || undefined,
           fields_data,
         })
+        // Leva a conversa do chat do rascunho pro id real do anúncio criado
+        const newId = res?.data?.id
+        if (newId) migrateChat(`copyEditor:new:${draftChatId}`, `copyEditor:edit:${newId}`)
         toast.success(status === 'final' ? 'AD finalizado salvo!' : 'Rascunho salvo!')
         resetForm()
       }
@@ -2118,7 +2142,7 @@ export default function CopyEditorPage() {
             loadAllMemory={() => { loadSwipeRefs(); loadAllMemory() }}
             refLoading={refLoading}
             buildAIContext={buildAIContext}
-            chatKey={persistKey}
+            chatKey={chatKey}
             structureGuide={writeMode === 'manual' ? structureGuide : null}
             organicBase={stripHtml(briefing?.organic_base || '')}
           />
