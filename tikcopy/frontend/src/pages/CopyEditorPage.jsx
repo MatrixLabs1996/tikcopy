@@ -44,15 +44,29 @@ function _fmtClock(totalSec) {
   const r = s % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`
 }
+// Aceita "mm:ss" / "hh:mm:ss" (ou número puro = minutos) e devolve segundos.
+function _parseTargetSec(str) {
+  const t = String(str || '').trim()
+  if (!t) return 0
+  if (t.includes(':')) {
+    const p = t.split(':').map((x) => parseInt(x, 10) || 0)
+    let h = 0, m = 0, s = 0
+    if (p.length === 2) { m = p[0]; s = p[1] }
+    else if (p.length >= 3) { h = p[0]; m = p[1]; s = p[2] }
+    else { m = p[0] }
+    return h * 3600 + m * 60 + s
+  }
+  const n = parseFloat(t.replace(',', '.'))
+  return isFinite(n) ? n * 60 : 0
+}
 function BodyTimeMeter({ body, stripHtml, targetMin, onChangeTarget }) {
   const [open, setOpen] = useState(false)
   const plain = (stripHtml ? stripHtml(body || '') : (body || '')).replace(/\s+/g, ' ').trim()
   const chars = plain.length
   const estSec = (chars / CHARS_PER_MIN) * 60
-  const tMin = parseFloat(String(targetMin).replace(',', '.'))
-  const hasTarget = !isFinite(tMin) ? false : tMin > 0
-  const maxChars = hasTarget ? Math.round(tMin * CHARS_PER_MIN) : 0
-  const targetSec = hasTarget ? tMin * 60 : 0
+  const targetSec = _parseTargetSec(targetMin)
+  const hasTarget = targetSec > 0
+  const maxChars = hasTarget ? Math.round((targetSec / 60) * CHARS_PER_MIN) : 0
   const over = hasTarget && chars > maxChars
   const pct = hasTarget && maxChars > 0 ? Math.min(100, (chars / maxChars) * 100) : 0
   const accent = over ? '#ef4444' : 'var(--accent)'
@@ -93,16 +107,15 @@ function BodyTimeMeter({ body, stripHtml, targetMin, onChangeTarget }) {
           <Clock size={14} /> Tempo alvo
         </button>
         <input
-          type="number" min="0" step="0.5" placeholder="ex: 2"
+          type="text" inputMode="numeric" placeholder="mm:ss"
           value={targetMin}
-          onChange={(e) => onChangeTarget(e.target.value)}
+          onChange={(e) => onChangeTarget(e.target.value.replace(/[^0-9:]/g, ''))}
           style={{
-            width: '64px', padding: '4px 8px', borderRadius: '6px', fontSize: '12px',
-            background: 'var(--bg-input)', border: '1px solid var(--border-default)',
+            width: '72px', padding: '4px 8px', borderRadius: '6px', fontSize: '12px',
+            textAlign: 'center', background: 'var(--bg-input)', border: '1px solid var(--border-default)',
             color: 'var(--text-primary)', fontFamily: 'var(--font)',
           }}
         />
-        <span>min</span>
         {hasTarget && (
           <span style={{ color: 'var(--text-secondary)' }}>
             máx ~<strong style={{ color: 'var(--text-primary)' }}>{maxChars.toLocaleString('pt-BR')}</strong> caracteres
