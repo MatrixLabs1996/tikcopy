@@ -2,17 +2,17 @@
 
 /* ── Design tokens ─────────────────────────────────────────── */
 :root {
-  /* Paleta quente do tema escuro do Claude (cinza levemente amarronzado) */
-  --bg-base: #30302e;
-  --bg-surface: #262624;
-  --bg-elevated: #262624;
-  --bg-input: #262624;
-  --bg-hover: #2b2b29;
-  --bg-active: #34332f;
+  /* Fundo escuro (swatch 02) + cards mais claros por cima (swatch 01) */
+  --bg-base: #1a1a18;
+  --bg-surface: #1a1a18;
+  --bg-elevated: #2b2b29;
+  --bg-input: #2b2b29;
+  --bg-hover: #323230;
+  --bg-active: #3a3a37;
 
-  --border-subtle: #35342f;
-  --border-default: #3e3d37;
-  --border-strong: #4c4a42;
+  --border-subtle: #2b2b29;
+  --border-default: #353532;
+  --border-strong: #45443f;
 
   --text-primary: #f5f4ee;
   --text-secondary: #d6d3ca;
