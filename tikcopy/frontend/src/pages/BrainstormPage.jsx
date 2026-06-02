@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, Loader2, CheckSquare, Square, DoorOpen, TrendingUp, Lightbulb, ArrowRight, Scale, AlertTriangle, Wrench } from 'lucide-react'
+import { Sparkles, Loader2, CheckSquare, Square, DoorOpen, TrendingUp, Lightbulb, ArrowRight, Scale, AlertTriangle, Wrench, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import useAppStore from '../stores/useAppStore'
 import NicheSelect from '../components/NicheSelect'
 import SevenLayers from '../components/SevenLayers'
+import usePersistedState from '../hooks/usePersistedState'
 
 function parseContent(s) {
   try { return typeof s.content === 'string' ? JSON.parse(s.content) : (s.content || {}) } catch { return {} }
@@ -18,12 +19,13 @@ export default function BrainstormPage() {
   const navigate = useNavigate()
 
   const [ads, setAds] = useState([])
-  const [niche, setNiche] = useState('')
-  const [selected, setSelected] = useState({})   // { swipeId: true }
+  // Persistidos: sobrevivem ao trocar de aba (não apaga o brainstorm gerado)
+  const [niche, setNiche] = usePersistedState('brainstorm:niche', '')
+  const [selected, setSelected] = usePersistedState('brainstorm:selected', {})   // { swipeId: true }
+  const [result, setResult] = usePersistedState('brainstorm:result', null)
+  const [council, setCouncil] = usePersistedState('brainstorm:council', null)
   const [loadingAds, setLoadingAds] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [result, setResult] = useState(null)
-  const [council, setCouncil] = useState(null)
   const [councilLoading, setCouncilLoading] = useState(false)
 
   useEffect(() => {
@@ -175,6 +177,14 @@ export default function BrainstormPage() {
       {/* Resultado */}
       {result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => { setResult(null); setCouncil(null) }}
+              style={{ ...btnGhost, display: 'flex', alignItems: 'center', gap: '5px' }}
+            >
+              <X size={12} /> Limpar resultado
+            </button>
+          </div>
           {/* Padrões */}
           {result.padroes && (
             <div className="tc-card" style={{ padding: '16px', borderLeft: '3px solid #22c55e' }}>
