@@ -87,16 +87,16 @@ def _bootstrap_cookies_from_env():
     cookies.txt no boot. É a gambiarra pra furar o bloqueio de IP de datacenter."""
     import os
     raw = os.environ.get("YOUTUBE_COOKIES", "")
-    if raw and raw.strip():
-        try:
-            # aceita \n escapado (caso a env venha numa linha só)
-            content = raw.replace("\\n", "\n")
-            COOKIES_FILE.write_text(content, encoding="utf-8")
-            logger.warning(f"[ytdlp] cookies.txt gravado a partir de YOUTUBE_COOKIES ({len(content)} chars)")
-    else:
+    if not (raw and raw.strip()):
         logger.warning("[ytdlp] YOUTUBE_COOKIES nao setado — download do YouTube sem cookies")
-        except Exception as exc:
-            logger.warning(f"[ytdlp] falha ao gravar cookies do env: {exc}")
+        return
+    try:
+        # aceita \n escapado (caso a env venha numa linha só)
+        content = raw.replace("\\n", "\n")
+        COOKIES_FILE.write_text(content, encoding="utf-8")
+        logger.warning(f"[ytdlp] cookies.txt gravado a partir de YOUTUBE_COOKIES ({len(content)} chars)")
+    except Exception as exc:
+        logger.warning(f"[ytdlp] falha ao gravar cookies do env: {exc}")
 
 
 _bootstrap_cookies_from_env()
