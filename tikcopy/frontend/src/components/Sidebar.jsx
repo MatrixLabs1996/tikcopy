@@ -41,6 +41,38 @@ function NavItem({ to, icon: Icon, label, collapsed }) {
   )
 }
 
+// Item desativado ("em breve") — não navega, fica cinza com selo.
+function SoonItem({ icon: Icon, label, collapsed }) {
+  return (
+    <div
+      title={collapsed ? `${label} (em breve)` : undefined}
+      style={{
+        display: 'flex', alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        gap: collapsed ? 0 : '8px',
+        padding: collapsed ? '9px 0' : '7px 8px',
+        borderRadius: '6px', fontSize: '13px',
+        color: 'var(--text-muted)', opacity: 0.45,
+        cursor: 'not-allowed', marginBottom: '1px', userSelect: 'none',
+      }}
+    >
+      <Icon size={collapsed ? 17 : 14} style={{ flexShrink: 0 }} />
+      {!collapsed && (
+        <>
+          <span>{label}</span>
+          <span style={{
+            marginLeft: 'auto', fontSize: '9px', fontWeight: 600, letterSpacing: '0.04em',
+            textTransform: 'uppercase', color: 'var(--text-muted)',
+            border: '1px solid var(--border-default)', borderRadius: '4px', padding: '1px 5px',
+          }}>
+            em breve
+          </span>
+        </>
+      )}
+    </div>
+  )
+}
+
 function SectionLabel({ label, collapsed }) {
   if (collapsed) return <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '10px 8px' }} />
   return (
@@ -159,8 +191,8 @@ export default function Sidebar({ collapsed = false, onToggle }) {
         <NavItem to="/drafts" icon={FileText} label="Minhas Copys" collapsed={collapsed} />
 
         <SectionLabel label="Análise" collapsed={collapsed} />
-        <NavItem to="/raio-x" icon={Radar} label="Raio-X de Perfil" collapsed={collapsed} />
-        <NavItem to="/brainstorm" icon={Sparkles} label="Brainstorm ADS" collapsed={collapsed} />
+        <SoonItem icon={Radar} label="Raio-X de Perfil" collapsed={collapsed} />
+        <SoonItem icon={Sparkles} label="Brainstorm ADS" collapsed={collapsed} />
 
         <SectionLabel label="Pesquisa" collapsed={collapsed} />
         <NavItem to="/briefings" icon={BookOpen} label="Projeto" collapsed={collapsed} />
