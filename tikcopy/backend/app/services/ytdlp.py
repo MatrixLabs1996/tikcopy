@@ -81,6 +81,25 @@ TEMP_DIR.mkdir(parents=True, exist_ok=True)
 COOKIES_FILE = Path(__file__).parent.parent.parent / "cookies.txt"
 
 
+def _bootstrap_cookies_from_env():
+    """No servidor (Railway) não há arquivo. Se a env YOUTUBE_COOKIES estiver setada
+    (conteúdo do cookies.txt exportado de um navegador LOGADO no YouTube), grava no
+    cookies.txt no boot. É a gambiarra pra furar o bloqueio de IP de datacenter."""
+    import os
+    raw = os.environ.get("YOUTUBE_COOKIES", "")
+    if raw and raw.strip():
+        try:
+            # aceita \n escapado (caso a env venha numa linha só)
+            content = raw.replace("\\n", "\n")
+            COOKIES_FILE.write_text(content, encoding="utf-8")
+            logger.info(f"[ytdlp] cookies.txt gravado a partir de YOUTUBE_COOKIES ({len(content)} chars)")
+        except Exception as exc:
+            logger.warning(f"[ytdlp] falha ao gravar cookies do env: {exc}")
+
+
+_bootstrap_cookies_from_env()
+
+
 def _cookies_args() -> list[str]:
     """Retorna args extras se cookies.txt existir, senão lista vazia."""
     if COOKIES_FILE.exists() and COOKIES_FILE.stat().st_size > 0:
