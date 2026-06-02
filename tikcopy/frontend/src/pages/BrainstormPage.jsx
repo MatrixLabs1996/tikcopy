@@ -79,6 +79,7 @@ export default function BrainstormPage() {
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 28px' }}>
+      <style>{`.tc-spin { animation: spin 0.8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
         <Sparkles size={22} style={{ color: 'var(--accent)' }} />
