@@ -87,13 +87,21 @@ def _run_profile_pipeline(job_id: str, url: str, top_n: int, niche: str | None, 
                 "progress": {"current": idx, "total": len(top), "title": v.get("title")},
             }
             try:
-                tmp_id = f"{job_id}-{idx}"
-                audio_path, title, metrics = ytdlp.download_audio(v["url"], tmp_id)
-                transcript = assemblyai.transcribe_file(audio_path, track_user_id=user_id, operation="raiox_transcricao")
-                try:
-                    Path(audio_path).unlink()
-                except OSError:
-                    pass
+                title = v.get("title")
+                metrics = {"views": ytdlp._fmt_num(v.get("view_count"))}
+                # 1) Tenta a LEGENDA do YouTube (sem baixar — fura bloqueio de datacenter, de graça)
+                transcript = ytdlp.fetch_youtube_transcript(v["url"])
+                # 2) Fallback: baixa o áudio e transcreve (AssemblyAI) se não tiver legenda
+                if not transcript:
+                    tmp_id = f"{job_id}-{idx}"
+                    audio_path, dl_title, dl_metrics = ytdlp.download_audio(v["url"], tmp_id)
+                    transcript = assemblyai.transcribe_file(audio_path, track_user_id=user_id, operation="raiox_transcricao")
+                    try:
+                        Path(audio_path).unlink()
+                    except OSError:
+                        pass
+                    title = dl_title or title
+                    metrics = dl_metrics or metrics
                 if not transcript:
                     continue
                 if translate:

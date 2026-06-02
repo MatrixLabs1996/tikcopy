@@ -1,3 +1,4 @@
+import re
 import sys
 import glob
 import json
@@ -8,6 +9,52 @@ from datetime import datetime
 from urllib.parse import urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_youtube_id(url: str) -> str | None:
+    """Extrai o ID de 11 caracteres de uma URL do YouTube (watch, youtu.be, shorts, embed)."""
+    m = re.search(r'(?:v=|youtu\.be/|shorts/|/embed/|/v/)([A-Za-z0-9_-]{11})', url or '')
+    return m.group(1) if m else None
+
+
+def fetch_youtube_transcript(url: str) -> str | None:
+    """Pega a LEGENDA/transcrição que o próprio YouTube já tem (sem baixar o vídeo).
+    Bem menos bloqueado em IP de datacenter que o download via yt-dlp. Retorna texto
+    corrido (sem timestamps) ou None se o vídeo não tiver legenda disponível."""
+    vid = _extract_youtube_id(url)
+    if not vid:
+        return None
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+    except ImportError:
+        return None
+    try:
+        tlist = YouTubeTranscriptApi.list_transcripts(vid)
+        t = None
+        # 1) legenda manual em PT
+        try:
+            t = tlist.find_transcript(['pt', 'pt-BR'])
+        except Exception:
+            pass
+        # 2) auto-legenda (PT/EN/ES)
+        if t is None:
+            try:
+                t = tlist.find_generated_transcript(['pt', 'pt-BR', 'en', 'es'])
+            except Exception:
+                pass
+        # 3) qualquer uma disponível
+        if t is None:
+            for tr in tlist:
+                t = tr
+                break
+        if t is None:
+            return None
+        segs = t.fetch()
+        text = " ".join((s.get('text') or '').strip() for s in segs).strip()
+        return text or None
+    except Exception as exc:
+        logger.info(f"[ytdlp] sem legenda pra {vid}: {exc}")
+        return None
 
 TEMP_DIR = Path(__file__).parent.parent.parent / "temp"
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
