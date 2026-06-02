@@ -45,7 +45,7 @@ function NavItem({ to, icon: Icon, label, collapsed }) {
 function SoonItem({ icon: Icon, label, collapsed }) {
   return (
     <div
-      title={collapsed ? `${label} (em breve)` : undefined}
+      title="Em breve"
       style={{
         display: 'flex', alignItems: 'center',
         justifyContent: collapsed ? 'center' : 'flex-start',
@@ -57,18 +57,7 @@ function SoonItem({ icon: Icon, label, collapsed }) {
       }}
     >
       <Icon size={collapsed ? 17 : 14} style={{ flexShrink: 0 }} />
-      {!collapsed && (
-        <>
-          <span>{label}</span>
-          <span style={{
-            marginLeft: 'auto', fontSize: '9px', fontWeight: 600, letterSpacing: '0.04em',
-            textTransform: 'uppercase', color: 'var(--text-muted)',
-            border: '1px solid var(--border-default)', borderRadius: '4px', padding: '1px 5px',
-          }}>
-            em breve
-          </span>
-        </>
-      )}
+      {!collapsed && <span>{label}</span>}
     </div>
   )
 }
