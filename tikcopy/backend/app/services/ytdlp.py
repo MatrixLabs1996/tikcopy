@@ -22,13 +22,22 @@ def _impersonate_available() -> bool:
     global _IMPERSONATE_OK
     if _IMPERSONATE_OK is not None:
         return _IMPERSONATE_OK
+    # Pergunta pro PRÓPRIO yt-dlp quais alvos ele consegue usar de verdade.
+    # (Só checar se o módulo curl_cffi existe não basta: pode estar instalado mas
+    # quebrado, e aí o yt-dlp recusa o impersonate em runtime.)
+    ok = False
     try:
-        import importlib.util
-        ok = importlib.util.find_spec("curl_cffi") is not None
-    except Exception:
+        proc = subprocess.run(
+            [sys.executable, "-m", "yt_dlp", "--list-impersonate-targets"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20,
+        )
+        out = (proc.stdout or "") + (proc.stderr or "")
+        ok = proc.returncode == 0 and "chrome" in out.lower()
+    except Exception as exc:
+        logger.warning(f"[ytdlp] falha ao listar impersonate targets: {exc}")
         ok = False
     _IMPERSONATE_OK = ok
-    logger.warning(f"[ytdlp] impersonate disponivel: {ok} (curl_cffi {'OK' if ok else 'AUSENTE'})")
+    logger.warning(f"[ytdlp] impersonate disponivel: {ok}")
     return ok
 
 
