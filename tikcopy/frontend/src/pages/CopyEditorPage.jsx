@@ -630,7 +630,7 @@ function Section({ title, defaultOpen = true, headerAction, children, open: cont
   )
 }
 
-function HookBox({ index, onChange, onRemove, canRemove, initialContent, suggestButton, currentText }) {
+function HookBox({ index, onChange, onRemove, canRemove, initialContent, suggestButton, currentText, initialComments, onCommentsChange }) {
   const editorRef = useRef(null)
   return (
     <div>
@@ -647,7 +647,7 @@ function HookBox({ index, onChange, onRemove, canRemove, initialContent, suggest
           )}
         </div>
       </div>
-      <RichEditor ref={editorRef} onChange={onChange} placeholder="Escreva o hook aqui..." initialContent={initialContent} />
+      <RichEditor ref={editorRef} onChange={onChange} onCommentsChange={onCommentsChange} initialComments={initialComments} placeholder="Escreva o hook aqui..." initialContent={initialContent} />
     </div>
   )
 }
@@ -1668,11 +1668,18 @@ export default function CopyEditorPage() {
             video_ref: fd.video_ref || '',
           })
           setBriefing({ ...EMPTY_BRIEFING, ...(fd.briefing || {}) })
-          const loadedHooks = (fd.hooks || []).map((html, i) => ({ id: Date.now() + i, html: html || '' }))
-          setHooks(loadedHooks.length ? loadedHooks : [{ id: Date.now(), html: '' }])
+          // Distribui os comentários salvos (lista única) entre hooks e body pelos ids no HTML
+          const allComments = fd.comments || []
+          const idsIn = (html) => new Set([...(html || '').matchAll(/data-comment-id="([^"]+)"/g)].map(m => m[1]))
+          const loadedHooks = (fd.hooks || []).map((html, i) => {
+            const ids = idsIn(html)
+            return { id: Date.now() + i, html: html || '', comments: allComments.filter(c => ids.has(c.id)) }
+          })
+          setHooks(loadedHooks.length ? loadedHooks : [{ id: Date.now(), html: '', comments: [] }])
           setBody(fd.body || '')
           setBodyInitial(fd.body || '')
-          setBodyComments(fd.comments || [])
+          const bodyIds = idsIn(fd.body)
+          setBodyComments(allComments.filter(c => bodyIds.has(c.id)))
           setTranslations(fd.translations || {})
           setRemessa(fd.remessa || '')
           setEditorVersion(v => v + 1)   // força o RichEditor a remontar com o conteúdo carregado
@@ -1818,6 +1825,7 @@ export default function CopyEditorPage() {
   }
   const removeHook = (id) => setHooks((prev) => prev.filter((h) => h.id !== id))
   const updateHook = (id, html) => setHooks((prev) => prev.map((h) => h.id === id ? { ...h, html } : h))
+  const updateHookComments = (id, comments) => setHooks((prev) => prev.map((h) => h.id === id ? { ...h, comments } : h))
 
   // Snapshot do conteúdo (pra detectar edições não salvas vs o último save no backend)
   const currentSnap = () => JSON.stringify({
@@ -1846,7 +1854,12 @@ export default function CopyEditorPage() {
         briefing,                      // briefing de criação do ADS (3 grupos)
         hooks: hooks.map(h => h.html),
         body,
-        comments: bodyComments,
+        // Comentários do body + de todos os hooks, numa lista só (dedupe por id)
+        comments: (() => {
+          const all = [...(bodyComments || []), ...hooks.flatMap(h => h.comments || [])]
+          const seen = new Set()
+          return all.filter(c => c && !seen.has(c.id) && seen.add(c.id))
+        })(),
         ...(Object.keys(translations || {}).length ? { translations } : {}),
         remessa: remessa || null,
         ...(existingRating ? { rating: existingRating } : {}),
@@ -2218,6 +2231,8 @@ export default function CopyEditorPage() {
               key={`${editingId || 'new'}-${editorVersion}-${h.id}`}
               index={i}
               onChange={(html) => updateHook(h.id, html)}
+              onCommentsChange={(c) => updateHookComments(h.id, c)}
+              initialComments={h.comments || []}
               onRemove={() => removeHook(h.id)}
               canRemove={hooks.length > 1}
               initialContent={h.html}

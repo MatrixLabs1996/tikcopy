@@ -391,29 +391,29 @@ function stripHtml(html) {
   return div.textContent || div.innerText || ''
 }
 
-function htmlToTextPreservingComments(html) {
+function htmlToTextPreservingComments(html, shared) {
   // Converte HTML do tiptap em texto preservando spans com data-comment-id.
-  // Coloca marcadores ⟦#N⟧ tanto no INÍCIO quanto no FIM do trecho comentado.
-  // Retorna { text, commentOrder: [id1, id2, ...] }
-  if (!html) return { text: '', commentOrder: [] }
+  // Coloca marcadores ⟦#N⟧ no INÍCIO e no FIM do trecho comentado.
+  // `shared` = { seen: Map(id->num), order: [ids] } pra numeração CONTÍNUA entre
+  // vários campos (hooks + body). Se não passar, usa numeração local.
+  const seen = shared?.seen || new Map()
+  const order = shared?.order || []
+  if (!html) return ''
   const div = document.createElement('div')
   div.innerHTML = html
-  const commentOrder = []
-  const seen = new Map()
   div.querySelectorAll('span[data-comment-id]').forEach((span) => {
     const id = span.getAttribute('data-comment-id')
     if (!seen.has(id)) {
-      seen.set(id, commentOrder.length + 1)
-      commentOrder.push(id)
+      seen.set(id, order.length + 1)
+      order.push(id)
     }
     const num = seen.get(id)
     span.textContent = `⟦#${num}⟧${span.textContent}⟦#${num}⟧`
   })
-  // Converte <p> em quebras de linha
   div.querySelectorAll('p, br, div').forEach((el) => {
     el.insertAdjacentText('beforebegin', '\n')
   })
-  return { text: (div.textContent || '').replace(/\n{3,}/g, '\n\n').trim(), commentOrder }
+  return (div.textContent || '').replace(/\n{3,}/g, '\n\n').trim()
 }
 
 // Código do ADS pra ser usado nos hooks: ex "01" → "ADS 01H1", "ADS 01H2"
@@ -451,8 +451,13 @@ export function buildCopyTxt(draft) {
     lines.push('')
   }
 
-  // Hooks — cada hook vira variante: ADS 01H1, ADS 01H2…
-  const hookTexts = hooks.map(h => stripHtml(h.html || h).trim()).filter(Boolean)
+  // Numeração CONTÍNUA dos comentários entre hooks e body
+  const shared = { seen: new Map(), order: [] }
+
+  // Hooks — cada hook vira variante: ADS 01H1, ADS 01H2… (preserva ⟦#N⟧)
+  const hookTexts = hooks
+    .map(h => htmlToTextPreservingComments(h.html || h, shared).replace(/\n+/g, ' ').trim())
+    .filter(Boolean)
   if (hookTexts.length) {
     lines.push('── HOOKS')
     lines.push('-'.repeat(40))
@@ -463,20 +468,20 @@ export function buildCopyTxt(draft) {
   }
 
   // Body com marcadores de comentário (⟦#N⟧ abre e fecha)
-  const { text: bodyText, commentOrder } = htmlToTextPreservingComments(body)
+  const bodyText = htmlToTextPreservingComments(body, shared)
   lines.push('── BODY')
   lines.push('-'.repeat(40))
   lines.push(bodyText)
   lines.push('')
 
-  // Comentários do editor (rodapé)
-  if (commentOrder.length > 0 && comments.length > 0) {
+  // Comentários do editor (rodapé) — hooks + body, na ordem em que aparecem
+  if (shared.order.length > 0 && comments.length > 0) {
     lines.push('='.repeat(60))
     lines.push('── COMENTÁRIOS DO EDITOR')
     lines.push('-'.repeat(40))
-    lines.push('(o trecho destacado no body fica entre ⟦#N⟧ ... ⟦#N⟧)')
+    lines.push('(o trecho destacado no hook/body fica entre ⟦#N⟧ ... ⟦#N⟧)')
     lines.push('')
-    commentOrder.forEach((id, idx) => {
+    shared.order.forEach((id, idx) => {
       const c = comments.find(x => x.id === id)
       if (!c) return
       lines.push(`⟦#${idx + 1}⟧ ${c.text}`)
