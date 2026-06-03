@@ -35,7 +35,9 @@ export async function guardedNavigate(navigate, to) {
   } else if (choice === 'final') {
     const ok = await guard.finalize?.()
     if (ok === false) return
+  } else if (choice === 'discard') {
+    // Sair sem salvar → apaga de verdade o que ficou escrito no editor
+    guard.discard?.()
   }
-  // 'discard' ou save ok → navega
   navigate(to)
 }

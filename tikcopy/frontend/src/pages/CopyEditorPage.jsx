@@ -1855,6 +1855,8 @@ export default function CopyEditorPage() {
   saveDraftRef.current = () => handleSave('draft')
   const finalizeRef = useRef(null)
   finalizeRef.current = () => handleSave('final')
+  const discardRef = useRef(null)
+  discardRef.current = () => resetForm()
 
   useEffect(() => {
     const guard = useEditorGuard.getState()
@@ -1862,6 +1864,7 @@ export default function CopyEditorPage() {
       isDirty: () => isDirtyRef.current(),
       saveDraft: () => saveDraftRef.current(),
       finalize: () => finalizeRef.current(),
+      discard: () => discardRef.current(),
     })
     // beforeunload: aviso nativo ao fechar/recarregar a janela com edições não salvas
     const onBeforeUnload = (e) => {

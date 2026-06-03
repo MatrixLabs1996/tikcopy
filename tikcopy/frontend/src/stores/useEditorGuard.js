@@ -16,10 +16,11 @@ const useEditorGuard = create((set) => ({
   isDirty: () => false,
   saveDraft: null,
   finalize: null,
+  discard: null,  // limpa o editor (apaga o que ficou escrito) ao sair sem salvar
 
   register: (cfg) => set({ active: true, ...cfg }),
   unregister: () =>
-    set({ active: false, isDirty: () => false, saveDraft: null, finalize: null }),
+    set({ active: false, isDirty: () => false, saveDraft: null, finalize: null, discard: null }),
 }))
 
 export default useEditorGuard
