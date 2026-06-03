@@ -337,6 +337,61 @@ async def get_history(current_user=Depends(get_current_user)):
     return res.data or []
 
 
+def _run_regenerate_guide(job_id: str, transcription_id: str, user_id: str):
+    """Refaz o guia de estudo de uma aula a partir da transcrição CRUA já salva
+    (sem re-transcrever). Atualiza o registro e a memória do projeto."""
+    try:
+        sb = get_supabase()
+        rec = (
+            sb.table("transcriptions")
+            .select("id, title, niche, project_id, metadata")
+            .eq("id", transcription_id).eq("user_id", user_id).limit(1).execute()
+        )
+        row = (rec.data or [None])[0]
+        if not row:
+            _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": "Transcrição não encontrada"}
+            return
+        raw = (row.get("metadata") or {}).get("raw_transcript") or ""
+        if not raw.strip():
+            _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": "Transcrição crua não disponível para regenerar"}
+            return
+
+        _jobs[job_id] = {"status": "organizing", "_ts": time.time()}
+        guide = claude.organize_lesson_content(
+            raw, title=row.get("title") or "Aula", niche=row.get("niche") or "",
+            track_user_id=user_id, track_project_id=row.get("project_id"),
+        )
+        if not guide:
+            _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": "Não foi possível gerar o material"}
+            return
+
+        _jobs[job_id] = {"status": "saving", "_ts": time.time()}
+        sb.table("transcriptions").update({"transcript_full": guide}).eq("id", transcription_id).eq("user_id", user_id).execute()
+        # Atualiza a cópia na memória do projeto
+        if row.get("project_id") and row.get("title"):
+            try:
+                (
+                    sb.table("project_memory").update({"content": guide})
+                    .eq("project_id", row["project_id"]).eq("type", "transcript_lesson")
+                    .eq("metadata->>title", row["title"]).execute()
+                )
+            except Exception:
+                pass
+        _jobs[job_id] = {"status": "done", "_ts": time.time(), "result": {"id": transcription_id}}
+    except Exception as exc:
+        _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": str(exc)}
+
+
+@router.post("/lessons/{transcription_id}/regenerate")
+async def regenerate_lesson_guide(transcription_id: str, background_tasks: BackgroundTasks, current_user=Depends(get_current_user)):
+    """Dispara a regeneração do guia de estudo (job em background)."""
+    job_id = str(uuid.uuid4())
+    cleanup_jobs(_jobs)
+    _jobs[job_id] = {"status": "queued", "_ts": time.time()}
+    background_tasks.add_task(_run_regenerate_guide, job_id, transcription_id, current_user.id)
+    return {"job_id": job_id}
+
+
 @router.get("/lessons/list")
 async def list_lessons(current_user=Depends(get_current_user)):
     """Biblioteca de Conteúdo: todos os guias de aula/podcast do usuário (nível conta)."""

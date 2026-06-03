@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Library, Search, Trash2, X, ArrowLeft, Loader2 } from 'lucide-react'
+import { Library, Search, Trash2, X, ArrowLeft, Loader2, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import Markdown from '../components/Markdown'
@@ -10,14 +10,42 @@ import { confirmAction } from '../stores/useConfirmStore'
 function GuideReader({ id, onBack }) {
   const [doc, setDoc] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [regen, setRegen] = useState(false)
 
-  useEffect(() => {
+  const loadDoc = () => {
     setLoading(true)
-    api.get(`/transcribe/${id}`)
+    return api.get(`/transcribe/${id}`)
       .then((r) => setDoc(r.data))
       .catch(() => toast.error('Não foi possível abrir este guia'))
       .finally(() => setLoading(false))
-  }, [id])
+  }
+  useEffect(() => { loadDoc() }, [id]) // eslint-disable-line
+
+  const hasRaw = !!(doc?.metadata?.raw_transcript)
+
+  const regenerate = async () => {
+    setRegen(true)
+    try {
+      const { data } = await api.post(`/transcribe/lessons/${id}/regenerate`)
+      const jobId = data.job_id
+      // Polling até concluir
+      await new Promise((resolve, reject) => {
+        const iv = setInterval(async () => {
+          try {
+            const s = await api.get(`/transcribe/status/${jobId}`)
+            if (s.data.status === 'done') { clearInterval(iv); resolve() }
+            else if (s.data.status === 'error') { clearInterval(iv); reject(new Error(s.data.error || 'Erro')) }
+          } catch (e) { clearInterval(iv); reject(e) }
+        }, 3000)
+      })
+      await loadDoc()
+      toast.success('Material regenerado!')
+    } catch (e) {
+      toast.error(`Falha ao regenerar: ${e.message || 'erro'}`)
+    } finally {
+      setRegen(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -37,7 +65,20 @@ function GuideReader({ id, onBack }) {
         >
           <ArrowLeft size={14} /> Voltar
         </button>
-        <DownloadMenu filename={doc.title || 'guia'} content={doc.transcript_full || ''} label="Baixar guia" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {hasRaw && (
+            <button
+              onClick={regenerate}
+              disabled={regen}
+              title="Refaz o material a partir da transcrição (sem re-transcrever)"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid var(--border-default)', borderRadius: '7px', padding: '6px 10px', cursor: regen ? 'default' : 'pointer', color: 'var(--text-secondary)', fontSize: '13px', fontFamily: 'var(--font)', opacity: regen ? 0.7 : 1 }}
+            >
+              <RefreshCw size={14} style={regen ? { animation: 'spin 0.9s linear infinite' } : undefined} />
+              {regen ? 'Regenerando…' : 'Regenerar material'}
+            </button>
+          )}
+          <DownloadMenu filename={doc.title || 'guia'} content={doc.transcript_full || ''} label="Baixar guia" />
+        </div>
       </div>
       <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>{doc.title}</h1>
       {doc.niche && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>Nicho: {doc.niche}</div>}
