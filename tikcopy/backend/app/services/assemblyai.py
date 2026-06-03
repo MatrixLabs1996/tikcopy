@@ -86,8 +86,13 @@ def upload_file(file_path: str) -> str:
     raise RuntimeError(f"Upload falhou após {MAX_UPLOAD_RETRIES} tentativas. Verifique sua conexão. Último erro: {last_err}")
 
 
-def transcribe(audio_url: str, *, track_user_id=None, operation="transcricao", track_project_id=None) -> str:
-    """Submit transcription job and poll until done. Returns transcript text."""
+class TranscriptionCancelled(Exception):
+    """Levantada quando o usuário cancela a transcrição no meio."""
+
+
+def transcribe(audio_url: str, *, track_user_id=None, operation="transcricao", track_project_id=None, should_cancel=None) -> str:
+    """Submit transcription job and poll until done. Returns transcript text.
+    Se `should_cancel()` retornar True durante o polling, aborta (cancela no AAI)."""
     logger.info(f"[AAI] Starting transcription for {audio_url}")
     # speech_models (plural) é o parâmetro novo da AssemblyAI; o antigo speech_model
     # está deprecado e cai no Universal "v1", que ENGOLE trechos de fala (ex.: voz
@@ -110,6 +115,12 @@ def transcribe(audio_url: str, *, track_user_id=None, operation="transcricao", t
     logger.info(f"[AAI] Polling transcript {transcript_id}")
 
     while True:
+        if should_cancel and should_cancel():
+            try:
+                requests.delete(f"{AAI_BASE}/transcript/{transcript_id}", headers=_headers(), timeout=15)
+            except Exception:
+                pass
+            raise TranscriptionCancelled()
         poll = requests.get(
             f"{AAI_BASE}/transcript/{transcript_id}",
             headers=_headers(),
@@ -125,13 +136,18 @@ def transcribe(audio_url: str, *, track_user_id=None, operation="transcricao", t
             return data.get("text") or ""
         if status == "error":
             raise RuntimeError(f"AAI transcription error: {data.get('error')}")
-        time.sleep(5)
+        # dorme em passos curtos pra reagir rápido ao cancelamento
+        for _ in range(5):
+            if should_cancel and should_cancel():
+                break
+            time.sleep(1)
 
 
-def transcribe_file(file_path: str, *, track_user_id=None, operation="transcricao", track_project_id=None) -> str:
+def transcribe_file(file_path: str, *, track_user_id=None, operation="transcricao", track_project_id=None, should_cancel=None) -> str:
     """Upload + transcribe a local file."""
     audio_url = upload_file(file_path)
     return transcribe(
         audio_url, track_user_id=track_user_id,
         operation=operation, track_project_id=track_project_id,
+        should_cancel=should_cancel,
     )

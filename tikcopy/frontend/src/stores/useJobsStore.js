@@ -61,8 +61,24 @@ const useJobsStore = create(
   )
 )
 
-const TERMINAL = new Set(['done', 'error'])
+const TERMINAL = new Set(['done', 'error', 'cancelled'])
 export const isActive = (job) => !TERMINAL.has(job.status)
+
+/**
+ * Pede o cancelamento de um job em andamento. Avisa o backend (que aborta o
+ * pipeline) e marca como 'cancelling' enquanto o poller não confirma 'cancelled'.
+ * Se o endpoint não tiver cancelamento, ao menos remove da UI (para o polling).
+ */
+export async function cancelJob(job) {
+  const { updateJob, removeJob } = useJobsStore.getState()
+  updateJob(job.id, { status: 'cancelling' })
+  try {
+    await api.post(`${job.endpoint}/cancel/${job.id}`)
+  } catch (e) {
+    // Endpoint sem cancelamento (404) → tira da UI mesmo assim
+    if (e?.response?.status === 404) removeJob(job.id)
+  }
+}
 
 /**
  * Faz UMA rodada de polling em todos os jobs ativos.

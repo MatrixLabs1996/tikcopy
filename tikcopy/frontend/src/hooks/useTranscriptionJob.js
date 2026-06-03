@@ -101,6 +101,8 @@ export const STATUS_LABELS = {
   analyzing_vsl2: 'Analisando VSL 2...',
   comparing: 'Comparando VSLs — identificando padrões...',
   saving: 'Salvando...',
+  cancelling: 'Cancelando...',
+  cancelled: 'Cancelado',
   done: 'Concluído!',
   error: 'Erro',
 }

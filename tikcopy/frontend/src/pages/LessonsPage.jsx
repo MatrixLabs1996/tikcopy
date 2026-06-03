@@ -19,7 +19,7 @@ function UploadLessons({ projectId, saveToMemory, translate, studyGuide }) {
 
   const lessonJobs = jobs.filter((j) => j.kind === 'lesson')
   const results = lessonJobs.filter((j) => j.status === 'done' && j.result)
-  const activeCount = lessonJobs.filter((j) => j.status !== 'done' && j.status !== 'error').length
+  const activeCount = lessonJobs.filter((j) => j.status !== 'done' && j.status !== 'error' && j.status !== 'cancelled').length
 
   const submitFiles = async (files) => {
     if (!files.length) return

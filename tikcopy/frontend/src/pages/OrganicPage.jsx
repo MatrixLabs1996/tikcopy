@@ -610,7 +610,7 @@ function TabLinkBatch({ niche, projectId, saveToMemory, translate, onSwitchToUpl
 
   const organicJobs = jobs.filter((j) => j.kind === 'organic')
   const doneJobs = organicJobs.filter((j) => j.status === 'done' && j.result)
-  const activeCount = organicJobs.filter((j) => j.status !== 'done' && j.status !== 'error').length
+  const activeCount = organicJobs.filter((j) => j.status !== 'done' && j.status !== 'error' && j.status !== 'cancelled').length
 
   const handleSubmit = async (e) => {
     e.preventDefault()

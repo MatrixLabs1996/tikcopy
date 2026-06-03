@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Loader2, CheckCircle2, AlertCircle, X, ChevronDown, ChevronUp, Activity } from 'lucide-react'
-import useJobsStore, { isActive, pollActiveJobs } from '../stores/useJobsStore'
+import { Loader2, CheckCircle2, AlertCircle, X, ChevronDown, ChevronUp, Activity, Ban } from 'lucide-react'
+import useJobsStore, { isActive, pollActiveJobs, cancelJob } from '../stores/useJobsStore'
 import { STATUS_LABELS } from '../hooks/useTranscriptionJob'
 
 // Pra onde cada tipo de processo leva ao clicar no dock
@@ -107,6 +107,7 @@ export default function TranscriptionDock() {
               <div style={{ flexShrink: 0 }}>
                 {j.status === 'done' && <CheckCircle2 size={14} style={{ color: 'var(--success-text)' }} />}
                 {j.status === 'error' && <AlertCircle size={14} style={{ color: 'var(--accent)' }} />}
+                {j.status === 'cancelled' && <Ban size={14} style={{ color: 'var(--text-muted)' }} />}
                 {isActive(j) && <Loader2 size={14} style={{ color: 'var(--accent)', animation: 'spin 0.9s linear infinite' }} />}
               </div>
               <div
@@ -128,7 +129,16 @@ export default function TranscriptionDock() {
                     : (STATUS_LABELS[j.status] || j.status)}
                 </div>
               </div>
-              {(j.status === 'done' || j.status === 'error') && (
+              {isActive(j) && j.status !== 'cancelling' && (
+                <button
+                  onClick={() => cancelJob(j)}
+                  title="Cancelar"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0, padding: '2px', display: 'flex', alignItems: 'center' }}
+                >
+                  <Ban size={12} />
+                </button>
+              )}
+              {(j.status === 'done' || j.status === 'error' || j.status === 'cancelled') && (
                 <button
                   onClick={() => removeJob(j.id)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0, padding: '2px' }}

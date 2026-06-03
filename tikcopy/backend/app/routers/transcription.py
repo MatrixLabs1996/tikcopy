@@ -18,6 +18,23 @@ TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 # In-memory job store (limpo via TTL — ver app/utils/jobs.py)
 _jobs: dict = {}
+# Jobs que o usuário pediu pra cancelar (checado nos checkpoints dos pipelines)
+_cancelled: set = set()
+
+
+def _is_cancelled(job_id: str) -> bool:
+    return job_id in _cancelled
+
+
+def _finish_cancelled(job_id: str, audio_path: str | None = None):
+    """Marca o job como cancelado e limpa arquivo temporário, se houver."""
+    if audio_path:
+        try:
+            Path(audio_path).unlink()
+        except OSError:
+            pass
+    _cancelled.discard(job_id)
+    _jobs[job_id] = {"status": "cancelled", "_ts": time.time(), "error": "Cancelado pelo usuário"}
 
 
 def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | None, niche: str | None, translate: bool = False):
@@ -46,12 +63,20 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
                 if cap:
                     transcript = cap
 
+        if _is_cancelled(job_id):
+            return _finish_cancelled(job_id, audio_path)
+
         # Sem legenda (ou TikTok/Instagram): baixa o áudio e transcreve (AssemblyAI)
         if not transcript:
             _jobs[job_id] = {"status": "downloading"}
             audio_path, title, metrics = ytdlp.download_audio(url, job_id)
+            if _is_cancelled(job_id):
+                return _finish_cancelled(job_id, audio_path)
             _jobs[job_id] = {"status": "transcribing"}
-            transcript = assemblyai.transcribe_file(audio_path, track_user_id=user_id, operation="transcricao_organico", track_project_id=project_id)
+            transcript = assemblyai.transcribe_file(audio_path, track_user_id=user_id, operation="transcricao_organico", track_project_id=project_id, should_cancel=lambda: _is_cancelled(job_id))
+
+        if _is_cancelled(job_id):
+            return _finish_cancelled(job_id, audio_path)
 
         if not transcript:
             raise ValueError("Transcrição retornou vazia.")
@@ -104,16 +129,26 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
                 "metadata": metrics,
             },
         }
+    except assemblyai.TranscriptionCancelled:
+        _finish_cancelled(job_id, audio_path)
     except Exception as exc:
-        _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": str(exc)}
+        if _is_cancelled(job_id):
+            _finish_cancelled(job_id, audio_path)
+        else:
+            _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": str(exc)}
 
 
 def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: str, project_id: str | None, niche: str | None, lesson: bool, translate: bool = False, study_guide: bool = False):
     try:
+        if _is_cancelled(job_id):
+            return _finish_cancelled(job_id, file_path)
         _jobs[job_id] = {"status": "transcribing"}
-        transcript = assemblyai.transcribe_file(file_path, track_user_id=user_id, operation="transcricao_organico", track_project_id=project_id)
+        transcript = assemblyai.transcribe_file(file_path, track_user_id=user_id, operation="transcricao_organico", track_project_id=project_id, should_cancel=lambda: _is_cancelled(job_id))
         if not transcript:
             raise ValueError("Transcrição retornou vazia.")
+
+        if _is_cancelled(job_id):
+            return _finish_cancelled(job_id, file_path)
 
         if translate:
             _jobs[job_id] = {"status": "translating"}
@@ -174,8 +209,13 @@ def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: st
             result["hook"] = split["hook"]
             result["body"] = split["body"]
         _jobs[job_id] = {"status": "done", "_ts": time.time(), "result": result}
+    except assemblyai.TranscriptionCancelled:
+        _finish_cancelled(job_id, file_path)
     except Exception as exc:
-        _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": str(exc)}
+        if _is_cancelled(job_id):
+            _finish_cancelled(job_id, file_path)
+        else:
+            _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": str(exc)}
 
 
 @router.post("/url")
@@ -260,6 +300,19 @@ async def cookies_status():
             "exporte cookies.txt e salve em " + str(ytdlp.COOKIES_FILE)
         ) if not ytdlp.has_cookies_file() else "Cookies.txt configurado! 🎉"
     }
+
+
+@router.post("/cancel/{job_id}")
+async def cancel_job(job_id: str, current_user=Depends(get_current_user)):
+    """Pede o cancelamento de uma transcrição em andamento. O pipeline checa esse
+    sinal nos checkpoints (download, transcrição, organização) e aborta."""
+    job = _jobs.get(job_id)
+    if job and job.get("status") in ("done", "error", "cancelled"):
+        return {"ok": True, "already_finished": True}
+    _cancelled.add(job_id)
+    if job_id in _jobs:
+        _jobs[job_id] = {**_jobs.get(job_id, {}), "status": "cancelling", "_ts": time.time()}
+    return {"ok": True}
 
 
 @router.get("/status/{job_id}")
