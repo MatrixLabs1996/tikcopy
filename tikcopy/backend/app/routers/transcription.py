@@ -1,5 +1,6 @@
 import time
 import uuid
+import logging
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, BackgroundTasks
 from typing import Optional
@@ -317,6 +318,35 @@ async def get_transcription(transcription_id: str, current_user=Depends(get_curr
 
 @router.delete("/{transcription_id}")
 async def delete_transcription(transcription_id: str, current_user=Depends(get_current_user)):
+    """Exclui a transcrição/guia E a cópia dela na memória do projeto (que alimenta a
+    IA). Assim 'excluir' realmente apaga do banco, não deixa rastro feeding a IA."""
     sb = get_supabase()
+    # Pega o registro antes de apagar (pra achar a cópia na memória do projeto)
+    rec = (
+        sb.table("transcriptions")
+        .select("id, project_id, title, type")
+        .eq("id", transcription_id)
+        .eq("user_id", current_user.id)
+        .limit(1)
+        .execute()
+    )
+    row = (rec.data or [None])[0]
+
     sb.table("transcriptions").delete().eq("id", transcription_id).eq("user_id", current_user.id).execute()
+
+    # Remove a cópia na memória do projeto (project_memory), casando por
+    # project_id + título + tipo de memória (transcript_organic / transcript_lesson).
+    if row and row.get("project_id") and row.get("title"):
+        mem_type = "transcript_lesson" if row.get("type") == "lesson" else "transcript_organic"
+        try:
+            (
+                sb.table("project_memory").delete()
+                .eq("project_id", row["project_id"])
+                .eq("type", mem_type)
+                .eq("metadata->>title", row["title"])
+                .execute()
+            )
+        except Exception as exc:
+            logging.getLogger(__name__).warning(f"[delete_transcription] falha ao limpar memória: {exc}")
+
     return {"ok": True}
