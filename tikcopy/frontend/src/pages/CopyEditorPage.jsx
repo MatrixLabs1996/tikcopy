@@ -1640,6 +1640,7 @@ export default function CopyEditorPage() {
     setBody('')
     setBodyInitial('')
     setBodyComments([])
+    setBodyTargetMin('')
     setTranslations({})
     setStructureGuide({ hook: '', hook_text: '', body: [] })
     setSelectedRef(null)          // limpa a "Referência ativa" do painel lateral
@@ -1655,6 +1656,7 @@ export default function CopyEditorPage() {
       `${persistKey}:structure`,
       `${persistKey}:structureVisible`,
       `${persistKey}:translations`,
+      `${persistKey}:bodyTargetMin`,
     )
     newDraftChat()   // chat limpo pro próximo anúncio (não herda conversa do anterior)
     if (editingId) setSearchParams({})
