@@ -1169,6 +1169,7 @@ const LANG_LABEL = Object.fromEntries(LOCALIZE_LANGS.map(l => [l.code, l.label])
 function LanguageVersions({ hooks, body, stripHtml, projectId, translations, onSetTranslations }) {
   const [lang, setLang] = useState('en')
   const [busy, setBusy] = useState(false)
+  const [review, setReview] = useState(null)  // { lang, hooks:[], body }
   const generated = Object.keys(translations || {})
 
   const generate = async () => {
@@ -1180,11 +1181,20 @@ function LanguageVersions({ hooks, body, stripHtml, projectId, translations, onS
       const { data } = await api.post('/ai/localize', {
         hooks: plainHooks, body: plainBody, lang, project_id: projectId || undefined,
       })
-      onSetTranslations({ ...(translations || {}), [lang]: { hooks: data.hooks || [], body: data.body || '', at: Date.now() } })
-      toast.success(`Versão em ${LANG_LABEL[lang]} gerada`)
+      // Abre o pop-up de revisão (editável) em vez de salvar direto
+      setReview({ lang, hooks: data.hooks || [], body: data.body || '' })
     } catch {
       toast.error('Falha ao gerar a versão traduzida')
     } finally { setBusy(false) }
+  }
+
+  const confirmReview = () => {
+    onSetTranslations({
+      ...(translations || {}),
+      [review.lang]: { hooks: review.hooks.filter(h => (h || '').trim()), body: review.body, at: Date.now() },
+    })
+    toast.success(`Versão em ${LANG_LABEL[review.lang]} salva`)
+    setReview(null)
   }
 
   const remove = (code) => {
@@ -1231,6 +1241,59 @@ function LanguageVersions({ hooks, body, stripHtml, projectId, translations, onS
           ))}
         </div>
       )}
+
+      {review && (
+        <div onClick={() => setReview(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: '12px', width: '100%', maxWidth: '720px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Revisar tradução</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>{LANG_LABEL[review.lang]}</div>
+              </div>
+              <button onClick={() => setReview(null)} style={{ background: 'transparent', border: '1px solid var(--border-default)', borderRadius: '6px', padding: '5px 9px', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={14} /></button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                Edite o que quiser antes de salvar. Cada campo é editável.
+              </div>
+              {review.hooks.length > 0 && (
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700, marginBottom: '8px' }}>Hooks</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {review.hooks.map((h, i) => (
+                      <textarea
+                        key={i}
+                        value={h}
+                        onChange={(e) => setReview(r => ({ ...r, hooks: r.hooks.map((x, j) => j === i ? e.target.value : x) }))}
+                        rows={2}
+                        style={{ width: '100%', resize: 'vertical', padding: '9px 11px', borderRadius: '7px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font)', lineHeight: 1.5 }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {review.body !== undefined && (
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700, marginBottom: '8px' }}>Body</div>
+                  <textarea
+                    value={review.body}
+                    onChange={(e) => setReview(r => ({ ...r, body: e.target.value }))}
+                    rows={14}
+                    style={{ width: '100%', resize: 'vertical', padding: '12px 14px', borderRadius: '8px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '13.5px', fontFamily: 'var(--font)', lineHeight: 1.7 }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', padding: '14px 20px', borderTop: '1px solid var(--border-subtle)' }}>
+              <button onClick={() => setReview(null)} style={{ padding: '8px 14px', borderRadius: '7px', fontSize: '13px', background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)' }}>Descartar</button>
+              <button onClick={confirmReview} className="tc-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px' }}><Check size={14} /> Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
