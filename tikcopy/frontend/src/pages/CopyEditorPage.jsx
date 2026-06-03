@@ -1305,6 +1305,65 @@ function LanguageVersions({ hooks, body, stripHtml, projectId, translations, onS
   )
 }
 
+// ─── Remessa (agrupa copys pra entrega) ─────────────────────────────────────
+function RemessaPicker({ value, onChange }) {
+  const [names, setNames] = useState([])
+  const [creating, setCreating] = useState(false)
+  const [newName, setNewName] = useState('')
+
+  useEffect(() => {
+    api.get('/drafts').then(r => {
+      const set = new Set((r.data || []).map(d => d.fields_data?.remessa).filter(Boolean))
+      setNames([...set].sort())
+    }).catch(() => {})
+  }, [])
+
+  const addNew = () => {
+    const n = newName.trim()
+    if (!n) return
+    if (!names.includes(n)) setNames(prev => [...prev, n].sort())
+    onChange(n)
+    setNewName('')
+    setCreating(false)
+  }
+
+  return (
+    <div style={{ marginTop: '8px', padding: '14px 16px', borderRadius: '10px', background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
+      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Remessa</div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+        Agrupa esta copy numa remessa pra entregar tudo junto depois.
+      </div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <select
+          value={creating ? '' : (value || '')}
+          onChange={(e) => { if (e.target.value === '__new__') { setCreating(true); } else { onChange(e.target.value); setCreating(false) } }}
+          style={{ padding: '8px 10px', borderRadius: '7px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font)', minWidth: '200px' }}
+        >
+          <option value="">— Nenhuma —</option>
+          {names.map(n => <option key={n} value={n}>{n}</option>)}
+          <option value="__new__">+ Criar nova remessa…</option>
+        </select>
+        {creating && (
+          <>
+            <input
+              autoFocus
+              placeholder="Nome da remessa"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') addNew() }}
+              style={{ padding: '8px 10px', borderRadius: '7px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font)' }}
+            />
+            <button onClick={addNew} style={{ padding: '8px 14px', borderRadius: '7px', fontSize: '13px', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font)' }}>Adicionar</button>
+          </>
+        )}
+        {value && !creating && (
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Nesta remessa: <strong style={{ color: 'var(--text-primary)' }}>{value}</strong></span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Página principal ───────────────────────────────────────────────────────
 
 export default function CopyEditorPage() {
@@ -1348,6 +1407,8 @@ export default function CopyEditorPage() {
   const [bodyComments, setBodyComments] = usePersistedState(`${persistKey}:bodyComments`, [])
   // Versões da copy em outros idiomas (adaptação nativa). { en: {hooks, body, at}, ... }
   const [translations, setTranslations] = usePersistedState(`${persistKey}:translations`, {})
+  // Remessa: nome do grupo de entrega ao qual esta copy pertence
+  const [remessa, setRemessa] = usePersistedState(`${persistKey}:remessa`, '')
   // Calculadora de tempo do body: minutos alvo → máx de caracteres (e tempo ao vivo
   // enquanto digita). Ritmo fixo ~150 ppm ≈ 900 caracteres/min de locução.
   const [bodyTargetMin, setBodyTargetMin] = usePersistedState(`${persistKey}:bodyTargetMin`, '')
@@ -1613,6 +1674,7 @@ export default function CopyEditorPage() {
           setBodyInitial(fd.body || '')
           setBodyComments(fd.comments || [])
           setTranslations(fd.translations || {})
+          setRemessa(fd.remessa || '')
           setEditorVersion(v => v + 1)   // força o RichEditor a remontar com o conteúdo carregado
           // Marca este conteúdo carregado como "salvo" (baseline pra detectar edições)
           savedSnapRef.current = JSON.stringify({
@@ -1642,6 +1704,7 @@ export default function CopyEditorPage() {
     setBodyComments([])
     setBodyTargetMin('')
     setTranslations({})
+    setRemessa('')
     setStructureGuide({ hook: '', hook_text: '', body: [] })
     setSelectedRef(null)          // limpa a "Referência ativa" do painel lateral
     setLoadedDraft(null)
@@ -1657,6 +1720,7 @@ export default function CopyEditorPage() {
       `${persistKey}:structureVisible`,
       `${persistKey}:translations`,
       `${persistKey}:bodyTargetMin`,
+      `${persistKey}:remessa`,
     )
     newDraftChat()   // chat limpo pro próximo anúncio (não herda conversa do anterior)
     if (editingId) setSearchParams({})
@@ -1784,6 +1848,7 @@ export default function CopyEditorPage() {
         body,
         comments: bodyComments,
         ...(Object.keys(translations || {}).length ? { translations } : {}),
+        remessa: remessa || null,
         ...(existingRating ? { rating: existingRating } : {}),
       }
 
@@ -2265,6 +2330,9 @@ export default function CopyEditorPage() {
           translations={translations}
           onSetTranslations={setTranslations}
         />
+
+        {/* Remessa */}
+        <RemessaPicker value={remessa} onChange={setRemessa} />
 
         {/* Salvar */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>

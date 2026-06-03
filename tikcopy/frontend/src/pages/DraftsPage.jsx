@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, CheckCircle2, Clock, Trophy, FlaskConical, ThumbsDown, ThumbsUp, Eye, Edit2, Target, X, Languages, Loader2, Check } from 'lucide-react'
+import { Trash2, CheckCircle2, Clock, Trophy, FlaskConical, ThumbsDown, ThumbsUp, Eye, Edit2, Target, X, Languages, Loader2, Check, Package, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import DownloadMenu from '../components/DownloadMenu'
@@ -187,6 +187,19 @@ function highlightMarkers(html) {
 }
 
 const LANG_LABEL_VIEW = { en: 'Inglês (EUA)', es: 'Espanhol (LATAM)', fr: 'Francês (França)', de: 'Alemão (Alemanha)', it: 'Italiano (Itália)' }
+
+// Monta o texto de UMA copy com o original + todas as traduções (pra remessa/download).
+function buildAdAllLangs(fd) {
+  const comments = fd.comments || []
+  const sect = (h, b) => buildCopyTxt({ ...fd, hooks: (h || []).map(x => ({ html: x })), body: b || '', comments })
+  const parts = [sect(fd.hooks || [], fd.body || '')]
+  const tr = fd.translations || {}
+  for (const [c, t] of Object.entries(tr)) {
+    parts.push(`\n\n----- ${LANG_LABEL_VIEW[c] || c} -----\n`)
+    parts.push(sect(t.hooks || [], t.body || ''))
+  }
+  return parts.join('\n')
+}
 
 // HTML → texto puro preservando parágrafos (pra edição inline no pop-up).
 function htmlToPlain(html) {
@@ -623,6 +636,67 @@ function ExportButton({ draft }) {
   )
 }
 
+function RemessaModal({ copies, existingNames, onAssign, onClose }) {
+  const [name, setName] = useState('')
+  const [selected, setSelected] = useState(() => new Set())
+  const toggle = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: '12px', width: '100%', maxWidth: '620px', maxHeight: '88vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Package size={16} style={{ color: 'var(--accent)' }} /> Criar / montar remessa
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border-default)', borderRadius: '6px', padding: '5px 9px', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={14} /></button>
+        </div>
+        <div style={{ padding: '16px 20px 8px' }}>
+          <input
+            list="remessa-names"
+            placeholder="Nome da remessa (ex: Cliente X, Semana 12)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font)' }}
+          />
+          <datalist id="remessa-names">{(existingNames || []).map(n => <option key={n} value={n} />)}</datalist>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '10px 0 4px' }}>Escolha as copys desta remessa:</div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {copies.length === 0 && <div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '10px 0' }}>Nenhuma copy disponível.</div>}
+          {copies.map(d => {
+            const fd = d.fields_data || {}
+            const on = selected.has(d.id)
+            return (
+              <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 11px', borderRadius: '8px', cursor: 'pointer', background: on ? 'rgba(255,62,94,0.06)' : 'var(--bg-elevated)', border: `1px solid ${on ? 'var(--accent)' : 'var(--border-default)'}` }}>
+                <input type="checkbox" checked={on} onChange={() => toggle(d.id)} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.title || 'Sem título'}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {fd.status === 'final' ? 'Finalizado' : 'Rascunho'}
+                    {(fd.langs || []).length ? ` · ${(fd.langs || []).length} idioma${(fd.langs || []).length > 1 ? 's' : ''}` : ''}
+                    {fd.remessa ? ` · já em "${fd.remessa}"` : ''}
+                  </div>
+                </div>
+              </label>
+            )
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', padding: '14px 20px', borderTop: '1px solid var(--border-subtle)' }}>
+          <button onClick={onClose} style={{ padding: '8px 14px', borderRadius: '7px', fontSize: '13px', background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)' }}>Cancelar</button>
+          <button
+            onClick={() => onAssign(name, [...selected])}
+            disabled={!name.trim() || selected.size === 0}
+            className="tc-btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px', opacity: (!name.trim() || selected.size === 0) ? 0.6 : 1 }}
+          >
+            <Check size={14} /> Montar remessa ({selected.size})
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DraftsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -814,11 +888,54 @@ export default function DraftsPage() {
     draft: drafts.filter(isDraft).length,
   }
 
+  // Remessas (derivadas das copys)
+  const [remessaFilter, setRemessaFilter] = useState('')
+  const [remessaModal, setRemessaModal] = useState(false)
+  const remessaNames = useMemo(() => {
+    const s = new Set(drafts.filter(isManual).map(d => d.fields_data?.remessa).filter(Boolean))
+    return [...s].sort()
+  }, [drafts])
+
   // Memoiza filtragem pra não recalcular em cada re-render (ex: abrir modal)
-  const current = useMemo(
-    () => tab === 'final' ? drafts.filter(isFinal) : drafts.filter(isDraft),
-    [tab, drafts]
-  )
+  const current = useMemo(() => {
+    let base = tab === 'final' ? drafts.filter(isFinal) : drafts.filter(isDraft)
+    if (remessaFilter) base = base.filter(d => d.fields_data?.remessa === remessaFilter)
+    return base
+  }, [tab, drafts, remessaFilter]) // eslint-disable-line
+
+  // Conteúdo da remessa pro download: todas as copys da remessa (qualquer status) + traduções
+  const buildRemessaContent = async () => {
+    const ids = drafts.filter(d => isManual(d) && d.fields_data?.remessa === remessaFilter).map(d => d.id)
+    const out = [`REMESSA: ${remessaFilter}\n${'='.repeat(40)}\n`]
+    for (const id of ids) {
+      try {
+        const res = await api.get(`/drafts/${id}`)
+        const fd = res.data.fields_data || {}
+        out.push(`\n\n##################  ${res.data.title || 'Copy'}  ##################\n`)
+        out.push(buildAdAllLangs(fd))
+      } catch { /* pula copy que falhar */ }
+    }
+    return out.join('\n')
+  }
+
+  // Atribui as copys selecionadas a uma remessa (PATCH em cada uma)
+  const assignRemessa = async (name, ids) => {
+    const clean = name.trim()
+    if (!clean || !ids.length) return
+    try {
+      await Promise.all(ids.map(id => {
+        const d = drafts.find(x => x.id === id)
+        const fd = d?.fields_data || {}
+        return api.patch(`/drafts/${id}`, { fields_data: { ...fd, remessa: clean } })
+      }))
+      setDrafts(prev => prev.map(d => ids.includes(d.id) ? { ...d, fields_data: { ...d.fields_data, remessa: clean } } : d))
+      toast.success(`Remessa "${clean}" com ${ids.length} cop${ids.length > 1 ? 'ys' : 'y'}`)
+      setRemessaFilter(clean)
+      setRemessaModal(false)
+    } catch {
+      toast.error('Erro ao montar a remessa')
+    }
+  }
 
   return (
     <div>
@@ -858,6 +975,32 @@ export default function DraftsPage() {
             </span>
           </button>
         ))}
+      </div>
+
+      {/* Remessas */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '16px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+          <Package size={14} /> Remessa
+        </span>
+        <select
+          value={remessaFilter}
+          onChange={(e) => setRemessaFilter(e.target.value)}
+          style={{ padding: '7px 10px', borderRadius: '7px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '12px', fontFamily: 'var(--font)' }}
+        >
+          <option value="">Todas as copys</option>
+          {remessaNames.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <button
+          onClick={() => setRemessaModal(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '7px 12px', borderRadius: '7px', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500 }}
+        >
+          <Plus size={13} /> Criar remessa
+        </button>
+        {remessaFilter && (
+          <div onClick={(e) => e.stopPropagation()}>
+            <DownloadMenu filename={`Remessa - ${remessaFilter}`.replace(/[^\w\s-]/g, '').trim()} getContent={buildRemessaContent} label="Baixar remessa" />
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -998,6 +1141,15 @@ export default function DraftsPage() {
           onClose={() => setViewing(null)}
           onEdit={() => { const d = viewing; setViewing(null); handleOpen(d) }}
           onUseAsReference={() => { const d = viewing; setViewing(null); handleUseAsReference(d) }}
+        />
+      )}
+
+      {remessaModal && (
+        <RemessaModal
+          copies={drafts.filter(isManual)}
+          existingNames={remessaNames}
+          onAssign={assignRemessa}
+          onClose={() => setRemessaModal(false)}
         />
       )}
     </div>

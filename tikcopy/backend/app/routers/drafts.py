@@ -23,11 +23,14 @@ def _make_lite_fields_data(fd: dict) -> dict:
     body_preview = _strip_html(fd.get("content") or fd.get("hook") or fd.get("body") or "")[:200]
     hooks = fd.get("hooks") or []
     rating = fd.get("rating") or {}
+    translations = fd.get("translations") or {}
     return {
         "status": fd.get("status"),
         "ads_number": fd.get("ads_number"),
         "angle": fd.get("angle"),
         "format": fd.get("format"),
+        "remessa": fd.get("remessa") or None,
+        "langs": list(translations.keys()) if isinstance(translations, dict) else [],
         "body_preview": body_preview,
         "hooks_count": len(hooks),
         "comments_count": len(fd.get("comments") or []),
