@@ -107,7 +107,7 @@ def _run_url_pipeline(job_id: str, url: str, user_id: str, project_id: str | Non
         _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": str(exc)}
 
 
-def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: str, project_id: str | None, niche: str | None, lesson: bool, translate: bool = False):
+def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: str, project_id: str | None, niche: str | None, lesson: bool, translate: bool = False, study_guide: bool = False):
     try:
         _jobs[job_id] = {"status": "transcribing"}
         transcript = assemblyai.transcribe_file(file_path, track_user_id=user_id, operation="transcricao_organico", track_project_id=project_id)
@@ -120,9 +120,9 @@ def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: st
 
         title = Path(filename).stem
 
-        # AULA/PODCAST: além de transcrever, ORGANIZA todo o conteúdo num guia
-        # estruturado e fiel (igual um documento de estudo do workshop).
-        if lesson:
+        # AULA/PODCAST com "material de estudo" marcado: ORGANIZA todo o conteúdo num
+        # guia estruturado e fiel. Sem marcar: só a transcrição pura paragrafada.
+        if lesson and study_guide:
             _jobs[job_id] = {"status": "organizing"}
             guide = claude.organize_lesson_content(
                 transcript, title=title, niche=niche or "",
@@ -130,6 +130,10 @@ def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: st
             )
             # Se o guia falhar por algum motivo, cai pra transcrição crua paragrafada.
             transcript_paragraphed = guide or claude._break_into_paragraphs(transcript)
+            split = {"hook": "", "body": ""}
+        elif lesson:
+            # Aula sem material de estudo: transcrição pura, só paragrafada pra leitura.
+            transcript_paragraphed = claude._break_into_paragraphs(transcript)
             split = {"hook": "", "body": ""}
         else:
             # Sem IA: só paragrafa o transcript pra leitura + split hook/body por pontuação
@@ -144,7 +148,7 @@ def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: st
             "title": title,
             "niche": niche,
             "transcript_full": transcript_paragraphed,
-            "metadata": {"raw_transcript": transcript} if lesson else {},
+            "metadata": {"raw_transcript": transcript, "study_guide": True} if (lesson and study_guide) else {},
         }
         if not lesson:
             record_data["hook"] = split["hook"]
@@ -221,6 +225,7 @@ async def transcribe_lesson(
     file: UploadFile = File(...),
     project_id: Optional[str] = Form(None),
     translate: Optional[str] = Form(None),
+    study_guide: Optional[str] = Form(None),
     current_user=Depends(get_current_user),
 ):
     job_id = str(uuid.uuid4())
@@ -232,10 +237,11 @@ async def transcribe_lesson(
 
     cleanup_jobs(_jobs)
     do_translate = translate in ("true", "1", "yes")
+    do_guide = study_guide in ("true", "1", "yes")
     _jobs[job_id] = {"status": "queued", "_ts": time.time()}
     background_tasks.add_task(
         _run_upload_pipeline,
-        job_id, file_path, file.filename, current_user.id, project_id, None, True, do_translate,
+        job_id, file_path, file.filename, current_user.id, project_id, None, True, do_translate, do_guide,
     )
     return {"job_id": job_id}
 

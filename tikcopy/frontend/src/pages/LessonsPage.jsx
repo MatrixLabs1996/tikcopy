@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import { Upload, Languages, X } from 'lucide-react'
+import { Upload, Languages, X, BookOpen } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import useAppStore from '../stores/useAppStore'
@@ -9,7 +9,7 @@ import Markdown from '../components/Markdown'
 import DownloadMenu from '../components/DownloadMenu'
 
 // ── Upload unificado (1+ arquivos) ───────────────────────────────
-function UploadLessons({ projectId, saveToMemory, translate }) {
+function UploadLessons({ projectId, saveToMemory, translate, studyGuide }) {
   const fileInputRef = useRef(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -31,6 +31,7 @@ function UploadLessons({ projectId, saveToMemory, translate }) {
         form.append('file', file)
         if (projectId) form.append('project_id', projectId)
         if (translate) form.append('translate', 'true')
+        if (studyGuide) form.append('study_guide', 'true')
         const res = await api.post('/transcribe/lesson', form)
         newJobs.push({
           id: res.data.job_id, kind: 'lesson', endpoint: '/transcribe',
@@ -53,7 +54,7 @@ function UploadLessons({ projectId, saveToMemory, translate }) {
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('video/') || f.type.startsWith('audio/'))
     if (!files.length) return toast.error('Apenas vídeos ou áudios')
     submitFiles(files)
-  }, [projectId, translate, saveToMemory]) // eslint-disable-line
+  }, [projectId, translate, saveToMemory, studyGuide]) // eslint-disable-line
 
   const handleDragOver = (e) => e.preventDefault()
 
@@ -141,6 +142,7 @@ export default function LessonsPage() {
   const activeProject = useAppStore((s) => s.activeProject)
   const [saveToMemory, setSaveToMemory] = useState(false)
   const [translate, setTranslate] = useState(false)
+  const [studyGuide, setStudyGuide] = useState(false)
 
   return (
     <div>
@@ -149,7 +151,7 @@ export default function LessonsPage() {
           Podcasts <span style={{ color: 'var(--accent)' }}>&</span> Aulas
         </h1>
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
-          Transcreve aulas, podcasts e vídeos longos e organiza tudo num guia completo e estruturado.
+          Transcreve aulas, podcasts e vídeos longos. Marque "material de estudo" pra organizar tudo num guia completo.
         </p>
       </div>
 
@@ -174,9 +176,28 @@ export default function LessonsPage() {
             <Languages size={13} /> Traduzir para PT-BR
           </span>
         </label>
+
+        {/* Toggle Material de estudo */}
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
+          <div
+            onClick={() => setStudyGuide((v) => !v)}
+            style={{ width: '36px', height: '20px', borderRadius: '999px', background: studyGuide ? 'var(--accent)' : 'var(--border-strong)', position: 'relative', transition: 'background 0.2s', flexShrink: 0, cursor: 'pointer' }}
+          >
+            <div style={{ position: 'absolute', top: '3px', left: studyGuide ? '18px' : '3px', width: '14px', height: '14px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+          </div>
+          <span style={{ fontSize: '13px', color: studyGuide ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: studyGuide ? 500 : 400, display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <BookOpen size={13} /> Gerar material de estudo
+          </span>
+        </label>
       </div>
 
-      <UploadLessons projectId={activeProject?.id} saveToMemory={saveToMemory} translate={translate} />
+      {studyGuide && (
+        <div style={{ marginBottom: '14px', fontSize: '12px', color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '10px 12px' }}>
+          A IA vai organizar todo o conteúdo num guia completo e estruturado (índice, capítulos e subtópicos). Leva mais tempo e tem custo maior, mas o guia fica salvo na aba <strong>Conteúdo</strong>.
+        </div>
+      )}
+
+      <UploadLessons projectId={activeProject?.id} saveToMemory={saveToMemory} translate={translate} studyGuide={studyGuide} />
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
