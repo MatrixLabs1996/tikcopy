@@ -113,7 +113,7 @@ export async function downloadPdf(filename, content) {
 // ─── DOCX ───────────────────────────────────────────────────────
 
 const URL_PATTERN = /https?:\/\/[^\s\]\)<>]+/
-const COMMENT_MARKER = /⟦#\d+⟧/g
+const COMMENT_MARKER = /\[#\d+\]/g
 
 // Parser: transforma "texto **bold** com http://link e ⟦#1⟧marca⟦#1⟧"
 // em [{ text, bold?, link?, marker? }]
@@ -134,11 +134,11 @@ function parseInline(text) {
         parts.push({ text: sub, link: sub, bold })
         continue
       }
-      // 3ª passada: separa marcadores de comentário ⟦#N⟧
-      const markerParts = sub.split(/(⟦#\d+⟧)/g)
+      // 3ª passada: separa marcadores de comentário [#N]
+      const markerParts = sub.split(/(\[#\d+\])/g)
       for (const mp of markerParts) {
         if (!mp) continue
-        if (/^⟦#\d+⟧$/.test(mp)) {
+        if (/^\[#\d+\]$/.test(mp)) {
           parts.push({ text: mp, marker: true, bold })
         } else {
           parts.push({ text: mp, bold })
@@ -408,7 +408,7 @@ function htmlToTextPreservingComments(html, shared) {
       order.push(id)
     }
     const num = seen.get(id)
-    span.textContent = `⟦#${num}⟧${span.textContent}⟦#${num}⟧`
+    span.textContent = `[#${num}]${span.textContent}[#${num}]`
   })
   div.querySelectorAll('p, br, div').forEach((el) => {
     el.insertAdjacentText('beforebegin', '\n')
@@ -453,40 +453,39 @@ export function buildCopyTxt(draft) {
 
   // Numeração CONTÍNUA dos comentários entre hooks e body
   const shared = { seen: new Map(), order: [] }
-
-  // Hooks — cada hook vira variante: ADS 01H1, ADS 01H2… (preserva ⟦#N⟧)
-  const hookTexts = hooks
-    .map(h => htmlToTextPreservingComments(h.html || h, shared).replace(/\n+/g, ' ').trim())
-    .filter(Boolean)
-  if (hookTexts.length) {
-    lines.push('── HOOKS')
-    lines.push('-'.repeat(40))
-    hookTexts.forEach((h, i) => {
-      lines.push(`**${code}H${i + 1}:** ${h}`)
-    })
-    lines.push('')
+  // Comentários (OBS) de um HTML específico, já com o número atribuído
+  const obsFor = (html) => {
+    const ids = [...String(html || '').matchAll(/data-comment-id="([^"]+)"/g)].map(m => m[1])
+    const uniq = [...new Set(ids)]
+    return uniq
+      .map(id => ({ num: shared.seen.get(id), text: (comments.find(c => c.id === id) || {}).text }))
+      .filter(x => x.num && x.text)
+      .sort((a, b) => a.num - b.num)
   }
 
-  // Body com marcadores de comentário (⟦#N⟧ abre e fecha)
+  // Hooks — cada hook vira variante: ADS 01H1, ADS 01H2… com as OBS logo abaixo
+  const hookList = hooks.filter(h => stripHtml(h.html || h).trim())
+  if (hookList.length) {
+    lines.push('── HOOKS')
+    lines.push('-'.repeat(40))
+    hookList.forEach((h, i) => {
+      const text = htmlToTextPreservingComments(h.html || h, shared).replace(/\n+/g, ' ').trim()
+      lines.push(`**${code}H${i + 1}:** ${text}`)
+      obsFor(h.html || h).forEach(o => lines.push(`OBS ${o.num}°: ${o.text}`))
+      lines.push('')
+    })
+  }
+
+  // Body com marcadores de comentário ([#N] abre e fecha) + OBS no final
   const bodyText = htmlToTextPreservingComments(body, shared)
   lines.push('── BODY')
   lines.push('-'.repeat(40))
   lines.push(bodyText)
   lines.push('')
-
-  // Comentários do editor (rodapé) — hooks + body, na ordem em que aparecem
-  if (shared.order.length > 0 && comments.length > 0) {
-    lines.push('='.repeat(60))
-    lines.push('── COMENTÁRIOS DO EDITOR')
-    lines.push('-'.repeat(40))
-    lines.push('(o trecho destacado no hook/body fica entre ⟦#N⟧ ... ⟦#N⟧)')
+  const bodyObs = obsFor(body)
+  if (bodyObs.length) {
+    bodyObs.forEach(o => lines.push(`OBS ${o.num}°: ${o.text}`))
     lines.push('')
-    shared.order.forEach((id, idx) => {
-      const c = comments.find(x => x.id === id)
-      if (!c) return
-      lines.push(`⟦#${idx + 1}⟧ ${c.text}`)
-      lines.push('')
-    })
   }
 
   return lines.join('\n')
