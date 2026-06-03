@@ -188,10 +188,18 @@ function highlightMarkers(html) {
 
 const LANG_LABEL_VIEW = { en: 'Inglês (EUA)', es: 'Espanhol (LATAM)', fr: 'Francês (França)', de: 'Alemão (Alemanha)', it: 'Italiano (Itália)' }
 
+// Extrai o bloco de informações (meta) do fields_data pro buildCopyTxt.
+function fdMeta(fd) {
+  return {
+    ads_number: fd.ads_number, angle: fd.angle, format: fd.format,
+    avatar: fd.avatar, editing_notes: fd.editing_notes, video_ref: fd.video_ref,
+  }
+}
+
 // Monta o texto de UMA copy com o original + todas as traduções (pra remessa/download).
 function buildAdAllLangs(fd) {
   const comments = fd.comments || []
-  const sect = (h, b) => buildCopyTxt({ ...fd, hooks: (h || []).map(x => ({ html: x })), body: b || '', comments })
+  const sect = (h, b) => buildCopyTxt({ meta: fdMeta(fd), hooks: (h || []).map(x => ({ html: x })), body: b || '', comments })
   const parts = [sect(fd.hooks || [], fd.body || '')]
   const tr = fd.translations || {}
   for (const [c, t] of Object.entries(tr)) {
@@ -316,7 +324,7 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
 
   // Download: original + todas as traduções juntos (pra entregar tudo ao editor)
   const buildCombined = () => {
-    const sect = (h, b, c) => buildCopyTxt({ ...fd, hooks: (h || []).map(x => ({ html: x })), body: b || '', comments: c })
+    const sect = (h, b, c) => buildCopyTxt({ meta: fdMeta(fd), hooks: (h || []).map(x => ({ html: x })), body: b || '', comments: c })
     const parts = [sect((fd.hooks || []), fd.body || '', comments)]
     for (const [c, t] of Object.entries(translations)) {
       parts.push(`\n\n======================================\n${LANG_LABEL_VIEW[c] || c}\n======================================\n`)
