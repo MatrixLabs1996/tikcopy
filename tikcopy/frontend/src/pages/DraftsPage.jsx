@@ -299,6 +299,21 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
     } finally { setSavingEdit(false) }
   }
 
+  // Excluir uma tradução de vez (some dos dados)
+  const removeLang = async (code) => {
+    const next = { ...translations }
+    delete next[code]
+    try {
+      await api.patch(`/drafts/${draft.id}`, { fields_data: { ...fd, translations: next } })
+      fd.translations = next
+      setTranslations(next)
+      if (view === code) setView('original')
+      toast.success(`Versão ${LANG_LABEL_VIEW[code] || code} removida`)
+    } catch {
+      toast.error('Erro ao remover a versão')
+    }
+  }
+
   // Download: original + todas as traduções juntos (pra entregar tudo ao editor)
   const buildCombined = () => {
     const sect = (h, b, c) => buildCopyTxt({ ...fd, hooks: (h || []).map(x => ({ html: x })), body: b || '', comments: c })
@@ -367,21 +382,29 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
         {!editMode && (
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '12px 22px 0' }}>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {['original', ...langCodes].map((c) => (
-              <button
-                key={c}
-                onClick={() => setView(c)}
-                style={{
-                  fontSize: '12px', padding: '5px 12px', borderRadius: '999px', cursor: 'pointer',
-                  fontFamily: 'var(--font)',
-                  background: view === c ? 'var(--accent)' : 'transparent',
-                  color: view === c ? '#fff' : 'var(--text-secondary)',
-                  border: `1px solid ${view === c ? 'var(--accent)' : 'var(--border-default)'}`,
-                }}
-              >
-                {c === 'original' ? 'Original' : (LANG_LABEL_VIEW[c] || c)}
-              </button>
-            ))}
+            {['original', ...langCodes].map((c) => {
+              const active = view === c
+              const isLang = c !== 'original'
+              return (
+                <span key={c} style={{ display: 'inline-flex', alignItems: 'center', borderRadius: '999px', overflow: 'hidden', border: `1px solid ${active ? 'var(--accent)' : 'var(--border-default)'}`, background: active ? 'var(--accent)' : 'transparent' }}>
+                  <button
+                    onClick={() => setView(c)}
+                    style={{ fontSize: '12px', padding: '5px 10px', cursor: 'pointer', fontFamily: 'var(--font)', background: 'transparent', border: 'none', color: active ? '#fff' : 'var(--text-secondary)' }}
+                  >
+                    {c === 'original' ? 'Original' : (LANG_LABEL_VIEW[c] || c)}
+                  </button>
+                  {isLang && (
+                    <button
+                      onClick={async (e) => { e.stopPropagation(); if (await confirmAction({ title: `Excluir a versão ${LANG_LABEL_VIEW[c] || c}?`, message: 'Some dos dados de vez.', confirmLabel: 'Excluir', danger: true })) removeLang(c) }}
+                      title="Excluir esta tradução"
+                      style={{ display: 'flex', alignItems: 'center', padding: '5px 7px 5px 2px', background: 'transparent', border: 'none', cursor: 'pointer', color: active ? '#fff' : 'var(--text-muted)' }}
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
+                </span>
+              )
+            })}
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <select

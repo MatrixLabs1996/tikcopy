@@ -1244,6 +1244,7 @@ def localize_copy(hooks: list, body: str, lang: str,
                   track_user_id=None, track_project_id=None) -> dict | None:
     """Adapta a copy (hooks + body) para um idioma de destino com NATURALIDADE NATIVA
     (não tradução literal). Mantém os mesmos parágrafos e a ordem dos hooks.
+    Faz o body em TEXTO PURO (robusto pra copy longa) e os hooks num call à parte.
     Retorna {"hooks": [...], "body": "..."} ou None."""
     lang = (lang or "").lower()
     if lang not in LOCALIZE_LANGUAGES:
@@ -1254,55 +1255,67 @@ def localize_copy(hooks: list, body: str, lang: str,
     if not hooks and not body:
         return None
 
-    system = (
-        f"Você adapta textos de copy de resposta direta para {idioma}, com naturalidade de "
-        f"falante NATIVO {nacionalidade}. NÃO faça tradução literal. Adapte expressões, estrutura "
-        "das frases e escolha de palavras para soar como algo escrito originalmente por um nativo. "
-        "Preserve totalmente o significado, a intenção e o tom. Elimine construções artificiais, "
-        "excesso de formalidade e frases que pareçam traduzidas. Priorize fluidez, naturalidade e "
-        "autenticidade. Reorganize frases se necessário para soar nativo. "
-        "MANTENHA EXATAMENTE a mesma quebra de parágrafos do body e a MESMA ORDEM dos hooks. "
-        "Zero travessões (—). "
-        "Responda APENAS com JSON válido: {\"hooks\": [\"...\", ...], \"body\": \"...\"} "
-        f"(tudo {no_idioma})."
+    base = (
+        f"Adapte o texto abaixo para {idioma} natural. Não faça tradução literal. Adapte expressões, "
+        f"estrutura das frases e escolha de palavras para soar como algo escrito por um falante nativo "
+        f"{nacionalidade}. Preserve totalmente o significado, a intenção e o tom original. Elimine "
+        "construções artificiais, excesso de formalidade e frases que pareçam traduzidas. Priorize "
+        "fluidez, naturalidade e autenticidade. Reorganize frases se necessário para soar nativo. "
+        "ZERO travessões (—)."
     )
-    hooks_block = "\n".join(f"[HOOK {i+1}]\n{h}" for i, h in enumerate(hooks)) or "(nenhum)"
-    user = f"HOOKS ({len(hooks)}):\n{hooks_block}\n\n[BODY]\n{body or '(vazio)'}"
+
+    def _nd(t):
+        return re.sub(r"\s*[—–]\s*", ", ", str(t or "")).strip()
 
     client = anthropic.Anthropic()
-    last = None
-    for attempt in range(3):
-        try:
-            r = client.messages.create(
-                model=SONNET_MODEL, max_tokens=6000,
-                system=system, messages=[{"role": "user", "content": user}],
-            )
-            _track(track_user_id, "traduzir_copy", SONNET_MODEL, r.usage, track_project_id)
-            raw = (r.content[0].text or "").strip()
+
+    def _call(system, user, max_tokens):
+        last = None
+        for attempt in range(4):
+            try:
+                r = client.messages.create(
+                    model=SONNET_MODEL, max_tokens=max_tokens,
+                    system=system, messages=[{"role": "user", "content": user}],
+                )
+                _track(track_user_id, "traduzir_copy", SONNET_MODEL, r.usage, track_project_id)
+                return (r.content[0].text or "").strip()
+            except Exception as e:
+                last = e
+                if any(s in str(e) for s in ("529", "overloaded", "503", "UNAVAILABLE", "429", "Connection", "timeout")) and attempt < 3:
+                    time.sleep(2 ** (attempt + 1))
+                    continue
+                raise
+        raise last
+
+    try:
+        # ── BODY em texto puro (sem JSON — robusto pra copy longa) ──
+        out_body = ""
+        if body:
+            sys_body = base + " MANTENHA EXATAMENTE a mesma quebra de parágrafos. Retorne APENAS o texto final, sem explicações."
+            out_body = _nd(_call(sys_body, body, 8000))
+
+        # ── HOOKS num call curto (JSON array, na mesma ordem) ──
+        out_hooks = []
+        if hooks:
+            sys_hooks = base + ' Você recebe uma lista de HOOKS. Responda APENAS com um array JSON de strings, na MESMA ordem, sem numeração e sem explicações. Ex: ["...", "..."].'
+            hooks_user = "\n".join(f"{i+1}. {h}" for i, h in enumerate(hooks))
+            raw = _call(sys_hooks, hooks_user, 2000)
             if raw.startswith("```"):
                 raw = re.sub(r"^```(?:json)?", "", raw).strip()
                 raw = re.sub(r"```$", "", raw).strip()
-            s, e = raw.find("{"), raw.rfind("}")
-            data = json.loads(raw[s:e + 1]) if s != -1 and e != -1 else {}
-            out_hooks = data.get("hooks") or []
-            out_body = data.get("body") or ""
-            # Rede de segurança anti-travessão (o prompt pede, mas o modelo às vezes escorrega)
-            def _nd(t):
-                return re.sub(r"\s*[—–]\s*", ", ", str(t or ""))
-            return {
-                "hooks": [_nd(h) for h in out_hooks],
-                "body": _nd(out_body),
-            }
-        except Exception as exc:
-            last = exc
-            msg = str(exc)
-            if any(s in msg for s in ("529", "overloaded", "503", "429", "Connection", "timeout")) and attempt < 2:
-                time.sleep(2 ** (attempt + 1))
-                continue
-            logging.getLogger(__name__).warning(f"[localize_copy] falhou: {exc}")
+            s, e = raw.find("["), raw.rfind("]")
+            try:
+                arr = json.loads(raw[s:e + 1]) if s != -1 and e != -1 else []
+            except Exception:
+                arr = [l.strip().lstrip("0123456789.)-• ").strip() for l in raw.splitlines() if l.strip()]
+            out_hooks = [_nd(h) for h in arr if str(h).strip()]
+
+        if not out_hooks and not out_body:
             return None
-    logging.getLogger(__name__).warning(f"[localize_copy] falhou: {last}")
-    return None
+        return {"hooks": out_hooks, "body": out_body}
+    except Exception as exc:
+        logging.getLogger(__name__).warning(f"[localize_copy] falhou: {exc}")
+        return None
 
 
 def _chunk_transcript(text: str, max_chars: int = 16000, overlap: int = 600) -> list[str]:
