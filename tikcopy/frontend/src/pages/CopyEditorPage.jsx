@@ -1232,8 +1232,14 @@ function LanguageVersions({ hooks, body, stripHtml, projectId, translations, onS
       {generated.length > 0 && (
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
           {generated.map(code => (
-            <span key={code} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '999px', padding: '3px 4px 3px 10px' }}>
-              {LANG_LABEL[code] || code}
+            <span key={code} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '999px', padding: '3px 4px 3px 4px' }}>
+              <button
+                onClick={() => setReview({ lang: code, hooks: (translations[code]?.hooks || []), body: translations[code]?.body || '' })}
+                title="Ver / editar esta versão"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontFamily: 'var(--font)', fontSize: '11px', padding: '2px 4px 2px 8px' }}
+              >
+                {LANG_LABEL[code] || code}
+              </button>
               <button onClick={() => remove(code)} title="Remover" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '2px' }}>
                 <X size={11} />
               </button>
