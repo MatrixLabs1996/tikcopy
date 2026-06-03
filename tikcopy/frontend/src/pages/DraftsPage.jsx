@@ -188,6 +188,16 @@ function highlightMarkers(html) {
 
 const LANG_LABEL_VIEW = { en: 'Inglês (EUA)', es: 'Espanhol (LATAM)', fr: 'Francês (França)', de: 'Alemão (Alemanha)', it: 'Italiano (Itália)' }
 
+// HTML → texto puro preservando parágrafos (pra edição inline no pop-up).
+function htmlToPlain(html) {
+  if (!html) return ''
+  let t = String(html)
+  t = t.replace(/<\/(p|div|h[1-6]|li)>/gi, '\n\n').replace(/<br\s*\/?>/gi, '\n')
+  t = t.replace(/<[^>]+>/g, '')
+  t = t.replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&#x?[0-9a-f]+;/gi, '')
+  return t.replace(/\n{3,}/g, '\n\n').trim()
+}
+
 // Converte texto puro (com \n\n entre parágrafos) em HTML de parágrafos.
 function plainToParagraphs(text) {
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -233,6 +243,58 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
     } catch {
       toast.error('Erro ao salvar a versão')
     }
+  }
+
+  // ── Edição inline no pop-up (original e traduções) ──
+  const [editMode, setEditMode] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [eHooks, setEHooks] = useState([])
+  const [eBody, setEBody] = useState('')
+
+  const startEdit = () => {
+    if (tr) {
+      setEHooks([...(tr.hooks || [])])
+      setEBody(tr.body || '')
+    } else {
+      setEHooks((fd.hooks || []).map(h => htmlToPlain(h)))
+      setEBody(htmlToPlain(fd.body || ''))
+    }
+    setEditMode(true)
+  }
+
+  const cancelEdit = () => { setEditMode(false) }
+
+  const saveEdit = async () => {
+    setSavingEdit(true)
+    const cleanHooks = eHooks.filter(h => (h || '').trim())
+    let newFd
+    if (tr) {
+      const next = { ...translations, [view]: { ...(translations[view] || {}), hooks: cleanHooks, body: eBody, at: Date.now() } }
+      newFd = { ...fd, translations: next }
+    } else {
+      // Original: guarda body como parágrafos HTML e hooks como parágrafos simples
+      newFd = { ...fd, hooks: cleanHooks.map(h => `<p>${h.replace(/\n/g, '<br/>')}</p>`), body: plainToParagraphs(eBody) }
+    }
+    try {
+      await api.patch(`/drafts/${draft.id}`, { fields_data: newFd })
+      Object.assign(fd, newFd)
+      if (tr) setTranslations(newFd.translations)
+      setEditMode(false)
+      toast.success('Alterações salvas')
+    } catch {
+      toast.error('Erro ao salvar')
+    } finally { setSavingEdit(false) }
+  }
+
+  // Download: original + todas as traduções juntos (pra entregar tudo ao editor)
+  const buildCombined = () => {
+    const sect = (h, b, c) => buildCopyTxt({ ...fd, hooks: (h || []).map(x => ({ html: x })), body: b || '', comments: c })
+    const parts = [sect((fd.hooks || []), fd.body || '', comments)]
+    for (const [c, t] of Object.entries(translations)) {
+      parts.push(`\n\n======================================\n${LANG_LABEL_VIEW[c] || c}\n======================================\n`)
+      parts.push(sect(t.hooks || [], t.body || '', comments))
+    }
+    return parts.join('\n')
   }
 
   // Hooks e body exibidos conforme o idioma selecionado
@@ -289,6 +351,7 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
         </div>
 
         {/* Idiomas: alternância (se houver) + gerar nova versão */}
+        {!editMode && (
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '12px 22px 0' }}>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {['original', ...langCodes].map((c) => (
@@ -326,6 +389,12 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
             </button>
           </div>
         </div>
+        )}
+        {editMode && (
+          <div style={{ padding: '12px 22px 0', fontSize: '12px', color: 'var(--accent)', fontWeight: 600 }}>
+            Editando {view === 'original' ? 'o original' : (LANG_LABEL_VIEW[view] || view)}
+          </div>
+        )}
 
         {/* Conteúdo */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px' }}>
@@ -347,13 +416,21 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
           )}
 
           {/* Hooks */}
-          {hooks.length > 0 && (
+          {(editMode ? eHooks.length > 0 : hooks.length > 0) && (
             <section style={{ marginBottom: '20px' }}>
               <div style={{ fontSize: '11px', color: 'var(--accent)', letterSpacing: '0.07em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>
                 Hooks
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {hooks.map((h, i) => (
+                {editMode ? eHooks.map((h, i) => (
+                  <textarea
+                    key={i}
+                    value={h}
+                    rows={2}
+                    onChange={(e) => setEHooks(prev => prev.map((x, j) => j === i ? e.target.value : x))}
+                    style={{ width: '100%', resize: 'vertical', fontSize: '13px', lineHeight: 1.6, padding: '10px 12px', borderRadius: '6px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontFamily: 'var(--font)' }}
+                  />
+                )) : hooks.map((h, i) => (
                   <div key={i} style={{
                     fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.6,
                     padding: '10px 12px', borderRadius: '6px',
@@ -367,19 +444,28 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
           )}
 
           {/* Body */}
-          {(tr ? tr.body : fd.body) && (
+          {(editMode || (tr ? tr.body : fd.body)) && (
             <section style={{ marginBottom: '20px' }}>
               <div style={{ fontSize: '11px', color: 'var(--accent)', letterSpacing: '0.07em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>
                 Body
               </div>
-              <div
-                style={{
-                  fontSize: '13.5px', color: 'var(--text-primary)', lineHeight: 1.75,
-                  padding: '14px 16px', borderRadius: '8px',
-                  background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
-                }}
-                dangerouslySetInnerHTML={{ __html: tr ? linkify(plainToParagraphs(tr.body)) : highlightMarkers(linkify(fd.body)) }}
-              />
+              {editMode ? (
+                <textarea
+                  value={eBody}
+                  rows={16}
+                  onChange={(e) => setEBody(e.target.value)}
+                  style={{ width: '100%', resize: 'vertical', fontSize: '13.5px', lineHeight: 1.75, padding: '14px 16px', borderRadius: '8px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontFamily: 'var(--font)' }}
+                />
+              ) : (
+                <div
+                  style={{
+                    fontSize: '13.5px', color: 'var(--text-primary)', lineHeight: 1.75,
+                    padding: '14px 16px', borderRadius: '8px',
+                    background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
+                  }}
+                  dangerouslySetInnerHTML={{ __html: tr ? linkify(plainToParagraphs(tr.body)) : highlightMarkers(linkify(fd.body)) }}
+                />
+              )}
             </section>
           )}
 
@@ -409,46 +495,53 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
           display: 'flex', gap: '8px', justifyContent: 'flex-end',
           padding: '14px 22px', borderTop: '1px solid var(--border-subtle)',
         }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '8px 14px', borderRadius: '7px', fontSize: '12px',
-              background: 'transparent', border: '1px solid var(--border-default)',
-              color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)',
-            }}
-          >
-            Fechar
-          </button>
-          <div style={{ marginRight: 'auto' }}>
-            <DownloadMenu
-              filename={`${(draft.title || 'anuncio').replace(/[^\w\s-]/g, '').trim()}${view !== 'original' ? ' (' + (LANG_LABEL_VIEW[view] || view) + ')' : ''}`}
-              getContent={() => buildCopyTxt({
-                ...fd,
-                hooks: hooks.map(h => ({ html: h })),
-                body: tr ? tr.body : (fd.body || ''),
-                comments,
-              })}
-              label={view === 'original' ? 'Baixar' : 'Baixar versão'}
-            />
-          </div>
-          <button
-            onClick={onUseAsReference}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '8px 14px', borderRadius: '7px', fontSize: '12px',
-              background: 'transparent', border: '1px solid var(--accent)',
-              color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500,
-            }}
-          >
-            <Target size={12} /> Bater controle
-          </button>
-          <button
-            onClick={onEdit}
-            className="tc-btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '12px' }}
-          >
-            <Edit2 size={12} /> Editar
-          </button>
+          {editMode ? (
+            <>
+              <button
+                onClick={cancelEdit}
+                style={{ marginRight: 'auto', padding: '8px 14px', borderRadius: '7px', fontSize: '12px', background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={savingEdit}
+                className="tc-btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '12px', opacity: savingEdit ? 0.7 : 1 }}
+              >
+                <Check size={13} /> {savingEdit ? 'Salvando…' : 'Salvar'}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={onClose}
+                style={{ padding: '8px 14px', borderRadius: '7px', fontSize: '12px', background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)' }}
+              >
+                Fechar
+              </button>
+              <div style={{ marginRight: 'auto' }}>
+                <DownloadMenu
+                  filename={`${(draft.title || 'anuncio').replace(/[^\w\s-]/g, '').trim()}${langCodes.length ? ' (todos os idiomas)' : ''}`}
+                  getContent={() => buildCombined()}
+                  label={langCodes.length ? 'Baixar (todos)' : 'Baixar'}
+                />
+              </div>
+              <button
+                onClick={onUseAsReference}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '7px', fontSize: '12px', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font)', fontWeight: 500 }}
+              >
+                <Target size={12} /> Bater controle
+              </button>
+              <button
+                onClick={startEdit}
+                className="tc-btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '12px' }}
+              >
+                <Edit2 size={12} /> Editar
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
