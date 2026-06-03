@@ -721,13 +721,11 @@ export default function DraftsPage() {
       return text
     }
 
-    // Hooks: só os marcados como "validado". Se nenhum tiver avaliação,
-    // pega todos (compatibilidade com ads antigos).
+    // Hooks: prioriza os marcados como "validado". Se NENHUM estiver validado,
+    // inclui TODOS (nunca leva o anúncio pro Escrever sem hooks).
     const allHooks = fd.hooks || []
-    const hasAnyRating = Object.keys(hookRatings).length > 0
-    const useIdx = allHooks
-      .map((_, i) => i)
-      .filter(i => hasAnyRating ? hookRatings[i] === 'validado' : true)
+    const validatedIdx = allHooks.map((_, i) => i).filter(i => hookRatings[i] === 'validado')
+    const useIdx = validatedIdx.length ? validatedIdx : allHooks.map((_, i) => i)
 
     // Hooks: cada linha tem o código em **negrito** (renderiza via Markdown)
     // Ex.: **ADS 01H1** — texto do hook
@@ -767,10 +765,10 @@ export default function DraftsPage() {
     }
     try {
       sessionStorage.setItem('swipe_reference', JSON.stringify(refPayload))
-      const n = useIdx.length
-      const msg = hasAnyRating && n > 0
+      const n = validatedIdx.length
+      const msg = n > 0
         ? `"${full.title}" carregado · ${n} hook${n > 1 ? 's' : ''} validado${n > 1 ? 's' : ''}`
-        : `"${full.title}" carregado como referência`
+        : `"${full.title}" carregado como referência (${useIdx.length} hook${useIdx.length !== 1 ? 's' : ''})`
       toast.success(msg)
       navigate('/criar-copy')
     } catch (err) {
