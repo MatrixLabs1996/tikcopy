@@ -160,9 +160,11 @@ def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: st
         # guia estruturado e fiel. Sem marcar: só a transcrição pura paragrafada.
         if lesson and study_guide:
             _jobs[job_id] = {"status": "organizing"}
+            def _prog(i, n):
+                _jobs[job_id] = {"status": "organizing", "progress": {"current": i, "total": n}}
             guide = claude.organize_lesson_content(
                 transcript, title=title, niche=niche or "",
-                track_user_id=user_id, track_project_id=project_id,
+                track_user_id=user_id, track_project_id=project_id, progress_cb=_prog,
             )
             # Se o guia falhar por algum motivo, cai pra transcrição crua paragrafada.
             transcript_paragraphed = guide or claude._break_into_paragraphs(transcript)
@@ -357,9 +359,11 @@ def _run_regenerate_guide(job_id: str, transcription_id: str, user_id: str):
             return
 
         _jobs[job_id] = {"status": "organizing", "_ts": time.time()}
+        def _prog(i, n):
+            _jobs[job_id] = {"status": "organizing", "_ts": time.time(), "progress": {"current": i, "total": n}}
         guide = claude.organize_lesson_content(
             raw, title=row.get("title") or "Aula", niche=row.get("niche") or "",
-            track_user_id=user_id, track_project_id=row.get("project_id"),
+            track_user_id=user_id, track_project_id=row.get("project_id"), progress_cb=_prog,
         )
         if not guide:
             _jobs[job_id] = {"status": "error", "_ts": time.time(), "error": "Não foi possível gerar o material"}

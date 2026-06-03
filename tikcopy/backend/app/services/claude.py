@@ -1,4 +1,5 @@
 import re
+import time
 import json
 import logging
 import anthropic
@@ -1248,10 +1249,11 @@ def _chunk_transcript(text: str, max_chars: int = 16000, overlap: int = 600) -> 
 
 
 def organize_lesson_content(transcript: str, title: str = "", niche: str = "",
-                            track_user_id=None, track_project_id=None) -> str:
+                            track_user_id=None, track_project_id=None, progress_cb=None) -> str:
     """Transforma a transcrição crua de uma aula/podcast longo num GUIA de estudo
     estruturado e FIEL (markdown), proporcional ao conteúdo falado. Fatia a
-    transcrição e expande pedaço por pedaço, depois monta título + sumário."""
+    transcrição e expande pedaço por pedaço, depois monta título + sumário.
+    `progress_cb(i, n)` é chamado antes de cada pedaço (pra mostrar progresso)."""
     if not transcript or not transcript.strip():
         return ""
     transcript = transcript.strip()
@@ -1260,15 +1262,37 @@ def organize_lesson_content(transcript: str, title: str = "", niche: str = "",
     def _strip_dashes(t: str) -> str:
         return re.sub(r"\s*[—–]\s*", ", ", t or "")
 
+    # Chamada com retry/backoff em erros transientes (529 sobrecarga, 503, 429, rede).
+    def _call(system, user, max_tokens):
+        last = None
+        for attempt in range(4):
+            try:
+                r = client.messages.create(
+                    model=SONNET_MODEL, max_tokens=max_tokens,
+                    system=system, messages=[{"role": "user", "content": user}],
+                )
+                _track(track_user_id, "organizar_aula", SONNET_MODEL, r.usage, track_project_id)
+                return r
+            except Exception as e:
+                last = e
+                msg = str(e)
+                transient = any(s in msg for s in (
+                    "529", "overloaded", "503", "UNAVAILABLE", "429",
+                    "rate_limit", "Connection", "timeout", "Timeout", "ECONN",
+                ))
+                if transient and attempt < 3:
+                    time.sleep(2 ** (attempt + 1))  # 2s, 4s, 8s
+                    continue
+                raise
+        raise last
+
     # ── Título do guia (chamada curta) ──
     guide_title = (title or "Guia da Aula").strip()
     try:
-        rt = client.messages.create(
-            model=SONNET_MODEL, max_tokens=60,
-            system="Dê um título curto e descritivo (até 12 palavras) para um guia de estudo feito a partir desta transcrição. Responda SOMENTE o título, sem aspas.",
-            messages=[{"role": "user", "content": transcript[:6000]}],
+        rt = _call(
+            "Dê um título curto e descritivo (até 12 palavras) para um guia de estudo feito a partir desta transcrição. Responda SOMENTE o título, sem aspas.",
+            transcript[:6000], 60,
         )
-        _track(track_user_id, "organizar_aula", SONNET_MODEL, rt.usage, track_project_id)
         cand = (rt.content[0].text or "").strip().strip('"').strip()
         if cand:
             guide_title = cand
@@ -1282,6 +1306,11 @@ def organize_lesson_content(transcript: str, title: str = "", niche: str = "",
     n = len(chunks)
     parts, last_heading = [], None
     for i, chunk in enumerate(chunks, 1):
+        if progress_cb:
+            try:
+                progress_cb(i, n)
+            except Exception:
+                pass
         prev = f'A parte anterior terminou no assunto: "{last_heading}".\n\n' if last_heading else ""
         user = (
             f"{prev}PARTE {i} de {n} da transcrição"
@@ -1290,12 +1319,7 @@ def organize_lesson_content(transcript: str, title: str = "", niche: str = "",
             "Escreva agora o trecho do guia de estudo correspondente a esta parte, completo e fiel."
         )
         try:
-            rs = client.messages.create(
-                model=SONNET_MODEL, max_tokens=4096,
-                system=LESSON_CHUNK_SYSTEM,
-                messages=[{"role": "user", "content": user}],
-            )
-            _track(track_user_id, "organizar_aula", SONNET_MODEL, rs.usage, track_project_id)
+            rs = _call(LESSON_CHUNK_SYSTEM, user, 4096)
             txt = _strip_dashes((rs.content[0].text or "").strip())
             if txt:
                 parts.append(txt)

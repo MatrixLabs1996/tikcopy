@@ -11,6 +11,7 @@ function GuideReader({ id, onBack }) {
   const [doc, setDoc] = useState(null)
   const [loading, setLoading] = useState(true)
   const [regen, setRegen] = useState(false)
+  const [regenProg, setRegenProg] = useState(null)
 
   const loadDoc = () => {
     setLoading(true)
@@ -33,6 +34,7 @@ function GuideReader({ id, onBack }) {
         const iv = setInterval(async () => {
           try {
             const s = await api.get(`/transcribe/status/${jobId}`)
+            if (s.data.progress) setRegenProg(s.data.progress)
             if (s.data.status === 'done') { clearInterval(iv); resolve() }
             else if (s.data.status === 'error') { clearInterval(iv); reject(new Error(s.data.error || 'Erro')) }
           } catch (e) { clearInterval(iv); reject(e) }
@@ -44,6 +46,7 @@ function GuideReader({ id, onBack }) {
       toast.error(`Falha ao regenerar: ${e.message || 'erro'}`)
     } finally {
       setRegen(false)
+      setRegenProg(null)
     }
   }
 
@@ -74,7 +77,7 @@ function GuideReader({ id, onBack }) {
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid var(--border-default)', borderRadius: '7px', padding: '6px 10px', cursor: regen ? 'default' : 'pointer', color: 'var(--text-secondary)', fontSize: '13px', fontFamily: 'var(--font)', opacity: regen ? 0.7 : 1 }}
             >
               <RefreshCw size={14} style={regen ? { animation: 'spin 0.9s linear infinite' } : undefined} />
-              {regen ? 'Regenerando…' : 'Regenerar material'}
+              {regen ? (regenProg ? `Organizando ${regenProg.current}/${regenProg.total}…` : 'Regenerando…') : 'Regenerar material'}
             </button>
           )}
           <DownloadMenu filename={doc.title || 'guia'} content={doc.transcript_full || ''} label="Baixar guia" />
