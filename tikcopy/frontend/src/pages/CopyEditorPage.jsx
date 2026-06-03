@@ -929,7 +929,7 @@ function RightPanel({ writeMode, memoryItems, finalDrafts, selectedRef, setSelec
 
       <div style={{ flex: 1, minHeight: 0 }}>
         {tab === 'chat' && writeMode === 'hibrido' ? (
-          <ChatPanel buildContext={buildAIContext} chatKey={chatKey} />
+          <ChatPanel key={chatKey} buildContext={buildAIContext} chatKey={chatKey} />
         ) : tab === 'brainstorm' && hasBrainstorm ? (
           <div style={{ height: '100%', overflowY: 'auto', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -1861,6 +1861,8 @@ export default function CopyEditorPage() {
         })
         savedSnapRef.current = currentSnap()   // marca como salvo (limpa o "dirty")
         toast.success(status === 'final' ? 'AD finalizado atualizado!' : 'Rascunho atualizado!')
+        // AD finalizado → limpa tudo (editor, idiomas, remessa e chat) pra começar do zero
+        if (status === 'final') resetForm()
       } else {
         // Cria novo
         const res = await api.post('/drafts', {
