@@ -20,7 +20,20 @@ const FORMATS = [
 export default function DownloadMenu({ filename, content, getContent, label = 'Baixar' }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
   const ref = useRef(null)
+
+  // Ao abrir, decide se o menu abre pra cima (quando não há espaço embaixo)
+  const toggle = () => {
+    setOpen((v) => {
+      const next = !v
+      if (next && ref.current) {
+        const r = ref.current.getBoundingClientRect()
+        setDropUp(window.innerHeight - r.bottom < 180)  // ~altura do menu de 3 itens
+      }
+      return next
+    })
+  }
 
   // Fecha ao clicar fora
   useEffect(() => {
@@ -47,7 +60,7 @@ export default function DownloadMenu({ filename, content, getContent, label = 'B
     <div ref={ref} style={{ position: 'relative', display: 'inline-flex' }}>
       {/* Main button */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         disabled={loading}
         style={{
           display: 'flex', alignItems: 'center', gap: '5px',
@@ -67,7 +80,8 @@ export default function DownloadMenu({ filename, content, getContent, label = 'B
       {/* Dropdown */}
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 999,
+          position: 'absolute', right: 0, zIndex: 9999,
+          ...(dropUp ? { bottom: 'calc(100% + 4px)' } : { top: 'calc(100% + 4px)' }),
           background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
           borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
           minWidth: '150px', overflow: 'hidden',
