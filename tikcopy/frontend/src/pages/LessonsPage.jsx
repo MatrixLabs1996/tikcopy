@@ -5,6 +5,8 @@ import api from '../services/api'
 import useAppStore from '../stores/useAppStore'
 import useJobsStore from '../stores/useJobsStore'
 import MemoryToggle from '../components/MemoryToggle'
+import Markdown from '../components/Markdown'
+import DownloadMenu from '../components/DownloadMenu'
 
 // ── Upload unificado (1+ arquivos) ───────────────────────────────
 function UploadLessons({ projectId, saveToMemory, translate }) {
@@ -116,11 +118,15 @@ function UploadLessons({ projectId, saveToMemory, translate }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {results.map((j, i) => (
               <div key={j.id} style={{ borderTop: i > 0 ? '1px solid var(--border-subtle)' : 'none', paddingTop: i > 0 ? '20px' : 0 }}>
-                <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)', marginBottom: '8px' }}>
-                  #{i + 1} — {j.result.title}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    #{i + 1} — {j.result.title}
+                  </div>
+                  <DownloadMenu filename={j.result.title || 'guia-aula'} content={j.result.transcript_full || ''} label="Baixar guia" />
                 </div>
-                <div className="tc-section-title">Transcrição</div>
-                <div className="tc-result-box">{j.result.transcript_full}</div>
+                <div className="tc-result-box" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                  <Markdown>{j.result.transcript_full || ''}</Markdown>
+                </div>
               </div>
             ))}
           </div>
@@ -143,7 +149,7 @@ export default function LessonsPage() {
           Podcasts <span style={{ color: 'var(--accent)' }}>&</span> Aulas
         </h1>
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
-          Transcrição pura de aulas, podcasts e vídeos longos — sem separação de hook/corpo.
+          Transcreve aulas, podcasts e vídeos longos e organiza tudo num guia completo e estruturado.
         </p>
       </div>
 

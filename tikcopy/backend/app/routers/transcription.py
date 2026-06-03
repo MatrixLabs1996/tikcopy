@@ -118,11 +118,24 @@ def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: st
             _jobs[job_id] = {"status": "translating"}
             transcript = claude.translate_to_portuguese(transcript, track_user_id=user_id)
 
-        # Sem IA: só paragrafa o transcript pra leitura + split hook/body por pontuação
-        transcript_paragraphed = claude._break_into_paragraphs(transcript) if not lesson else transcript
-        split = claude.split_hook_body(transcript) if not lesson else {"hook": "", "body": ""}
-
         title = Path(filename).stem
+
+        # AULA/PODCAST: além de transcrever, ORGANIZA todo o conteúdo num guia
+        # estruturado e fiel (igual um documento de estudo do workshop).
+        if lesson:
+            _jobs[job_id] = {"status": "organizing"}
+            guide = claude.organize_lesson_content(
+                transcript, title=title, niche=niche or "",
+                track_user_id=user_id, track_project_id=project_id,
+            )
+            # Se o guia falhar por algum motivo, cai pra transcrição crua paragrafada.
+            transcript_paragraphed = guide or claude._break_into_paragraphs(transcript)
+            split = {"hook": "", "body": ""}
+        else:
+            # Sem IA: só paragrafa o transcript pra leitura + split hook/body por pontuação
+            transcript_paragraphed = claude._break_into_paragraphs(transcript)
+            split = claude.split_hook_body(transcript)
+
         record_data = {
             "user_id": user_id,
             "project_id": project_id,
@@ -131,6 +144,7 @@ def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: st
             "title": title,
             "niche": niche,
             "transcript_full": transcript_paragraphed,
+            "metadata": {"raw_transcript": transcript} if lesson else {},
         }
         if not lesson:
             record_data["hook"] = split["hook"]
@@ -140,7 +154,7 @@ def _run_upload_pipeline(job_id: str, file_path: str, filename: str, user_id: st
         record = save_transcription(record_data)
 
         if lesson:
-            save_transcript_to_memory(project_id, "transcript_lesson", title, transcript, {"filename": filename})
+            save_transcript_to_memory(project_id, "transcript_lesson", title, transcript_paragraphed, {"filename": filename})
         else:
             org_content = f"## Hook\n{split['hook']}\n\n## Body\n{split['body']}"
             save_transcript_to_memory(project_id, "transcript_organic", title, org_content, {"filename": filename, "niche": niche})

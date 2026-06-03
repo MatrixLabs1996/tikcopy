@@ -89,6 +89,7 @@ export const STATUS_LABELS = {
   queued: 'Na fila...',
   downloading: 'Baixando vídeo...',
   transcribing: 'Transcrevendo...',
+  organizing: 'Organizando o conteúdo em um guia...',
   translating: 'Traduzindo para português...',
   formatting: 'Formatando...',
   analyzing: 'Analisando...',

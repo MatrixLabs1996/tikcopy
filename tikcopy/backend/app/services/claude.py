@@ -1202,3 +1202,130 @@ def brainstorm_council(concepts: list, offer_summary: str = "", niche: str = "",
         return json.loads(raw[start:end + 1])
     except json.JSONDecodeError:
         return None
+
+
+# ─── Organizar aula/podcast longo num GUIA completo (2 passadas) ──────────────
+LESSON_OUTLINE_SYSTEM = """Você é um organizador de conhecimento. Recebe a transcrição COMPLETA \
+de uma aula/workshop (pode ser longa, de horas) e cria o ÍNDICE de um guia escrito completo e fiel \
+ao que foi ensinado.
+
+REGRAS:
+- Cubra TODO o conteúdo, na melhor ordem didática (não precisa ser a ordem cronológica da fala).
+- Seções principais (capítulos) + subtópicos dentro de cada uma. Seja granular: um workshop denso \
+rende de 8 a 20 seções.
+- Os títulos devem refletir o conteúdo REAL da aula (frameworks, etapas, exemplos, métricas), não \
+títulos genéricos.
+- NÃO invente assunto que não foi falado.
+
+Responda APENAS com JSON válido neste formato:
+{
+  "titulo": "título curto do guia (tema central da aula)",
+  "secoes": [
+    {"titulo": "1. Nome do capítulo", "subtopicos": ["subtópico a cobrir", "outro", "..."]}
+  ]
+}"""
+
+LESSON_SECTION_SYSTEM = """Você transforma a transcrição de uma aula/workshop em um GUIA escrito \
+completo e FIEL. Vou te pedir UMA seção por vez. Escreva essa seção em markdown.
+
+REGRAS CRÍTICAS:
+- Use a transcrição como única fonte. NÃO invente nada que não tenha sido dito.
+- Seja COMPLETO e fiel: preserve definições, frameworks, passos, exemplos reais, nomes, números, \
+métricas e análises ditas na aula. NÃO resuma a ponto de perder informação.
+- Escreva texto corrido, claro e didático (não bullets soltos sem contexto). Pode usar listas quando \
+fizer sentido, mas sempre explicando.
+- Hierarquia markdown: '## ' no título da seção, '### ' nos subtópicos.
+- ZERO travessões (—). Use ponto, vírgula ou dois pontos.
+- Não escreva introdução do tipo "nesta seção vamos ver". Vá direto ao conteúdo.
+- Escreva SOMENTE a seção pedida (não repita outras seções nem o índice)."""
+
+
+def organize_lesson_content(transcript: str, title: str = "", niche: str = "",
+                            track_user_id=None, track_project_id=None) -> str:
+    """Transforma a transcrição crua de uma aula/podcast longo num GUIA estruturado e fiel
+    (markdown). Faz em 2 passadas: (1) índice/estrutura, (2) conteúdo seção por seção.
+    A transcrição inteira vai como bloco CACHEADO, reusado barato em todas as chamadas."""
+    if not transcript or not transcript.strip():
+        return ""
+    transcript = transcript.strip()
+    client = anthropic.Anthropic()
+
+    ctx_intro = (
+        f"TRANSCRIÇÃO COMPLETA da aula/workshop \"{title or 'Aula'}\""
+        + (f" (nicho: {niche})" if niche else "") + ":\n\n"
+    )
+    # Bloco cacheado (reusado em todas as chamadas — barateia muito o input repetido)
+    transcript_block = {
+        "type": "text", "text": ctx_intro + transcript,
+        "cache_control": {"type": "ephemeral"},
+    }
+
+    def _strip_dashes(t: str) -> str:
+        return re.sub(r"\s*[—–]\s*", ", ", t or "")
+
+    # ── Passada 1: índice ──
+    try:
+        r1 = client.messages.create(
+            model=SONNET_MODEL, max_tokens=3000,
+            system=[{"type": "text", "text": LESSON_OUTLINE_SYSTEM}, transcript_block],
+            messages=[{"role": "user", "content": "Gere o ÍNDICE completo do guia desta aula."}],
+        )
+        _track(track_user_id, "organizar_aula", SONNET_MODEL, r1.usage, track_project_id)
+        raw = (r1.content[0].text or "").strip()
+        if raw.startswith("```"):
+            raw = re.sub(r"^```(?:json)?", "", raw).strip()
+            raw = re.sub(r"```$", "", raw).strip()
+        s, e = raw.find("{"), raw.rfind("}")
+        outline = json.loads(raw[s:e + 1]) if s != -1 and e != -1 else {}
+    except Exception as exc:
+        logging.getLogger(__name__).warning(f"[organize_lesson] índice falhou: {exc}")
+        outline = {}
+
+    guide_title = (outline.get("titulo") or title or "Guia da Aula").strip()
+    sections = outline.get("secoes") or []
+    if not isinstance(sections, list) or not sections:
+        # Fallback: 1 passada só (sem índice) — organiza o que couber
+        try:
+            rf = client.messages.create(
+                model=SONNET_MODEL, max_tokens=8000,
+                system=[{"type": "text", "text": LESSON_SECTION_SYSTEM}, transcript_block],
+                messages=[{"role": "user", "content": "Organize TODA a aula num guia estruturado completo e fiel, em markdown com títulos e subtítulos."}],
+            )
+            _track(track_user_id, "organizar_aula", SONNET_MODEL, rf.usage, track_project_id)
+            body = _strip_dashes((rf.content[0].text or "").strip())
+            return f"# {guide_title}\n\n{body}"
+        except Exception as exc:
+            logging.getLogger(__name__).warning(f"[organize_lesson] fallback falhou: {exc}")
+            return ""
+
+    # Sumário
+    parts = [f"# {guide_title}", ""]
+    parts.append("## Sumário")
+    for sec in sections:
+        parts.append(f"- {sec.get('titulo') or 'Seção'}")
+    parts.append("")
+
+    # ── Passada 2: conteúdo seção por seção (transcrição cacheada) ──
+    for sec in sections:
+        sec_title = (sec.get("titulo") or "Seção").strip()
+        subs = sec.get("subtopicos") or []
+        subs_txt = ("\nSubtópicos que esta seção deve cobrir:\n" + "\n".join(f"- {s}" for s in subs)) if subs else ""
+        user = (
+            f"Escreva agora, completa e fiel, APENAS esta seção do guia:\n\n"
+            f"SEÇÃO: {sec_title}{subs_txt}\n\n"
+            f"Comece com '## {sec_title}'."
+        )
+        try:
+            rs = client.messages.create(
+                model=SONNET_MODEL, max_tokens=4500,
+                system=[{"type": "text", "text": LESSON_SECTION_SYSTEM}, transcript_block],
+                messages=[{"role": "user", "content": user}],
+            )
+            _track(track_user_id, "organizar_aula", SONNET_MODEL, rs.usage, track_project_id)
+            parts.append(_strip_dashes((rs.content[0].text or "").strip()))
+            parts.append("")
+        except Exception as exc:
+            logging.getLogger(__name__).warning(f"[organize_lesson] seção '{sec_title}' falhou: {exc}")
+            parts.append(f"## {sec_title}\n\n(Não foi possível gerar esta seção.)\n")
+
+    return "\n".join(parts).strip()
