@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, CheckCircle2, Clock, Trophy, FlaskConical, ThumbsDown, ThumbsUp, Eye, Edit2, Target, X } from 'lucide-react'
+import { Trash2, CheckCircle2, Clock, Trophy, FlaskConical, ThumbsDown, ThumbsUp, Eye, Edit2, Target, X, Languages, Loader2, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import DownloadMenu from '../components/DownloadMenu'
@@ -198,10 +198,42 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
   const fd = draft.fields_data || {}
   const code = adsCode(fd)
   const comments = fd.comments || []
-  const translations = fd.translations || {}
+  const [translations, setTranslations] = useState(fd.translations || {})
   const langCodes = Object.keys(translations)
   const [view, setView] = useState('original')
   const tr = view !== 'original' ? translations[view] : null
+
+  // Gerar versão em outro idioma direto daqui (sem reabrir no Escrever)
+  const [genLang, setGenLang] = useState('en')
+  const [genBusy, setGenBusy] = useState(false)
+  const [review, setReview] = useState(null)  // { lang, hooks:[], body }
+
+  const generateLang = async () => {
+    const plainHooks = (fd.hooks || []).map(h => stripHtml(h)).filter(Boolean)
+    const plainBody = stripHtml(fd.body || '').trim()
+    if (!plainHooks.length && !plainBody) { toast.error('Esta copy não tem conteúdo para traduzir'); return }
+    setGenBusy(true)
+    try {
+      const { data } = await api.post('/ai/localize', { hooks: plainHooks, body: plainBody, lang: genLang, project_id: draft.project_id || undefined })
+      setReview({ lang: genLang, hooks: data.hooks || [], body: data.body || '' })
+    } catch {
+      toast.error('Falha ao gerar a versão traduzida')
+    } finally { setGenBusy(false) }
+  }
+
+  const confirmReview = async () => {
+    const next = { ...translations, [review.lang]: { hooks: review.hooks.filter(h => (h || '').trim()), body: review.body, at: Date.now() } }
+    try {
+      await api.patch(`/drafts/${draft.id}`, { fields_data: { ...fd, translations: next } })
+      fd.translations = next  // mantém o objeto local em sincronia
+      setTranslations(next)
+      setView(review.lang)
+      setReview(null)
+      toast.success(`Versão em ${LANG_LABEL_VIEW[review.lang] || review.lang} salva`)
+    } catch {
+      toast.error('Erro ao salvar a versão')
+    }
+  }
 
   // Hooks e body exibidos conforme o idioma selecionado
   const hooks = tr
@@ -225,6 +257,7 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
   }
 
   return (
+    <>
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000,
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
@@ -255,9 +288,9 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
           </button>
         </div>
 
-        {/* Seletor de idioma (Original + versões geradas) */}
-        {langCodes.length > 0 && (
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', padding: '12px 22px 0' }}>
+        {/* Idiomas: alternância (se houver) + gerar nova versão */}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', padding: '12px 22px 0' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {['original', ...langCodes].map((c) => (
               <button
                 key={c}
@@ -274,7 +307,25 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
               </button>
             ))}
           </div>
-        )}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <select
+              value={genLang}
+              onChange={(e) => setGenLang(e.target.value)}
+              disabled={genBusy}
+              style={{ padding: '6px 8px', borderRadius: '7px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '12px', fontFamily: 'var(--font)' }}
+            >
+              {Object.entries(LANG_LABEL_VIEW).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+            </select>
+            <button
+              onClick={generateLang}
+              disabled={genBusy}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '6px 12px', borderRadius: '7px', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: genBusy ? 'default' : 'pointer', fontFamily: 'var(--font)', fontWeight: 500, opacity: genBusy ? 0.7 : 1 }}
+            >
+              {genBusy ? <Loader2 size={12} style={{ animation: 'spin 0.9s linear infinite' }} /> : <Languages size={12} />}
+              {genBusy ? 'Gerando…' : (langCodes.includes(genLang) ? 'Regerar idioma' : 'Gerar em outro idioma')}
+            </button>
+          </div>
+        </div>
 
         {/* Conteúdo */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px' }}>
@@ -401,6 +452,48 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
         </div>
       </div>
     </div>
+
+    {review && (
+      <div onClick={() => setReview(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: '12px', width: '100%', maxWidth: '720px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Revisar tradução</div>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>{LANG_LABEL_VIEW[review.lang] || review.lang}</div>
+            </div>
+            <button onClick={() => setReview(null)} style={{ background: 'transparent', border: '1px solid var(--border-default)', borderRadius: '6px', padding: '5px 9px', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={14} /></button>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>Edite o que quiser antes de salvar.</div>
+            {review.hooks.length > 0 && (
+              <div style={{ marginBottom: '18px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700, marginBottom: '8px' }}>Hooks</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {review.hooks.map((h, i) => (
+                    <textarea key={i} value={h} rows={2}
+                      onChange={(e) => setReview(r => ({ ...r, hooks: r.hooks.map((x, j) => j === i ? e.target.value : x) }))}
+                      style={{ width: '100%', resize: 'vertical', padding: '9px 11px', borderRadius: '7px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font)', lineHeight: 1.5 }} />
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700, marginBottom: '8px' }}>Body</div>
+              <textarea value={review.body} rows={14}
+                onChange={(e) => setReview(r => ({ ...r, body: e.target.value }))}
+                style={{ width: '100%', resize: 'vertical', padding: '12px 14px', borderRadius: '8px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '13.5px', fontFamily: 'var(--font)', lineHeight: 1.7 }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', padding: '14px 20px', borderTop: '1px solid var(--border-subtle)' }}>
+            <button onClick={() => setReview(null)} style={{ padding: '8px 14px', borderRadius: '7px', fontSize: '13px', background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font)' }}>Descartar</button>
+            <button onClick={confirmReview} className="tc-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px' }}><Check size={14} /> Confirmar</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </>
   )
 }
 
