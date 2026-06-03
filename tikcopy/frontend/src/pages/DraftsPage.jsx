@@ -186,11 +186,27 @@ function highlightMarkers(html) {
   return html.replace(/⟦#(\d+)⟧/g, '<span style="color:#1E88E5;font-weight:600">⟦#$1⟧</span>')
 }
 
+const LANG_LABEL_VIEW = { en: 'Inglês (EUA)', es: 'Espanhol (LATAM)', fr: 'Francês (França)', de: 'Alemão (Alemanha)', it: 'Italiano (Itália)' }
+
+// Converte texto puro (com \n\n entre parágrafos) em HTML de parágrafos.
+function plainToParagraphs(text) {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return String(text || '').split(/\n{2,}/).map(p => `<p style="margin:0 0 10px">${esc(p).replace(/\n/g, '<br/>')}</p>`).join('')
+}
+
 function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
   const fd = draft.fields_data || {}
   const code = adsCode(fd)
-  const hooks = (fd.hooks || []).map(h => stripHtml(h)).filter(Boolean)
   const comments = fd.comments || []
+  const translations = fd.translations || {}
+  const langCodes = Object.keys(translations)
+  const [view, setView] = useState('original')
+  const tr = view !== 'original' ? translations[view] : null
+
+  // Hooks e body exibidos conforme o idioma selecionado
+  const hooks = tr
+    ? (tr.hooks || []).filter(h => (h || '').trim())
+    : (fd.hooks || []).map(h => stripHtml(h)).filter(Boolean)
 
   const metaLines = [
     ['Nº do ADS',  fd.ads_number],
@@ -239,6 +255,27 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
           </button>
         </div>
 
+        {/* Seletor de idioma (Original + versões geradas) */}
+        {langCodes.length > 0 && (
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', padding: '12px 22px 0' }}>
+            {['original', ...langCodes].map((c) => (
+              <button
+                key={c}
+                onClick={() => setView(c)}
+                style={{
+                  fontSize: '12px', padding: '5px 12px', borderRadius: '999px', cursor: 'pointer',
+                  fontFamily: 'var(--font)',
+                  background: view === c ? 'var(--accent)' : 'transparent',
+                  color: view === c ? '#fff' : 'var(--text-secondary)',
+                  border: `1px solid ${view === c ? 'var(--accent)' : 'var(--border-default)'}`,
+                }}
+              >
+                {c === 'original' ? 'Original' : (LANG_LABEL_VIEW[c] || c)}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Conteúdo */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px' }}>
           {/* Informações */}
@@ -279,7 +316,7 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
           )}
 
           {/* Body */}
-          {fd.body && (
+          {(tr ? tr.body : fd.body) && (
             <section style={{ marginBottom: '20px' }}>
               <div style={{ fontSize: '11px', color: 'var(--accent)', letterSpacing: '0.07em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>
                 Body
@@ -290,7 +327,7 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
                   padding: '14px 16px', borderRadius: '8px',
                   background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
                 }}
-                dangerouslySetInnerHTML={{ __html: highlightMarkers(linkify(fd.body)) }}
+                dangerouslySetInnerHTML={{ __html: tr ? linkify(plainToParagraphs(tr.body)) : highlightMarkers(linkify(fd.body)) }}
               />
             </section>
           )}
@@ -331,6 +368,18 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
           >
             Fechar
           </button>
+          <div style={{ marginRight: 'auto' }}>
+            <DownloadMenu
+              filename={`${(draft.title || 'anuncio').replace(/[^\w\s-]/g, '').trim()}${view !== 'original' ? ' (' + (LANG_LABEL_VIEW[view] || view) + ')' : ''}`}
+              getContent={() => buildCopyTxt({
+                ...fd,
+                hooks: hooks.map(h => ({ html: h })),
+                body: tr ? tr.body : (fd.body || ''),
+                comments,
+              })}
+              label={view === 'original' ? 'Baixar' : 'Baixar versão'}
+            />
+          </div>
           <button
             onClick={onUseAsReference}
             style={{

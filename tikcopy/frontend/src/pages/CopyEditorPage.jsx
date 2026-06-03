@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { Plus, Save, X, ChevronRight, ChevronDown, BookOpen, Megaphone, FileText, RefreshCw, User, Download, Check, ListTree, Loader2, Target, Zap, Clock } from 'lucide-react'
+import { Plus, Save, X, ChevronRight, ChevronDown, BookOpen, Megaphone, FileText, RefreshCw, User, Download, Check, ListTree, Loader2, Target, Zap, Clock, Languages } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import useAppStore from '../stores/useAppStore'
@@ -1156,6 +1156,86 @@ function OrganicSwipePickerModal({ onClose, onPick }) {
   )
 }
 
+// ─── Versões em outros idiomas (adaptação nativa) ───────────────────────────
+export const LOCALIZE_LANGS = [
+  { code: 'en', label: 'Inglês (EUA)' },
+  { code: 'es', label: 'Espanhol (LATAM)' },
+  { code: 'fr', label: 'Francês (França)' },
+  { code: 'de', label: 'Alemão (Alemanha)' },
+  { code: 'it', label: 'Italiano (Itália)' },
+]
+const LANG_LABEL = Object.fromEntries(LOCALIZE_LANGS.map(l => [l.code, l.label]))
+
+function LanguageVersions({ hooks, body, stripHtml, projectId, translations, onSetTranslations }) {
+  const [lang, setLang] = useState('en')
+  const [busy, setBusy] = useState(false)
+  const generated = Object.keys(translations || {})
+
+  const generate = async () => {
+    const plainHooks = (hooks || []).map(h => stripHtml(h.html || '')).filter(Boolean)
+    const plainBody = stripHtml(body || '').trim()
+    if (!plainHooks.length && !plainBody) { toast.error('Escreva a copy antes de gerar a tradução'); return }
+    setBusy(true)
+    try {
+      const { data } = await api.post('/ai/localize', {
+        hooks: plainHooks, body: plainBody, lang, project_id: projectId || undefined,
+      })
+      onSetTranslations({ ...(translations || {}), [lang]: { hooks: data.hooks || [], body: data.body || '', at: Date.now() } })
+      toast.success(`Versão em ${LANG_LABEL[lang]} gerada`)
+    } catch {
+      toast.error('Falha ao gerar a versão traduzida')
+    } finally { setBusy(false) }
+  }
+
+  const remove = (code) => {
+    const next = { ...(translations || {}) }
+    delete next[code]
+    onSetTranslations(next)
+  }
+
+  return (
+    <div style={{ marginTop: '8px', padding: '14px 16px', borderRadius: '10px', background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
+      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
+        Versão em outro idioma
+      </div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+        Adapta a copy de forma nativa (não tradução literal), com os mesmos parágrafos. Fica salva junto do anúncio.
+      </div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <select
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+          disabled={busy}
+          style={{ padding: '8px 10px', borderRadius: '7px', background: 'var(--bg-input)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font)' }}
+        >
+          {LOCALIZE_LANGS.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+        </select>
+        <button
+          onClick={generate}
+          disabled={busy}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '7px', fontSize: '13px', background: 'var(--accent)', border: 'none', color: '#fff', cursor: busy ? 'default' : 'pointer', fontFamily: 'var(--font)', opacity: busy ? 0.7 : 1 }}
+        >
+          {busy ? <Loader2 size={13} style={{ animation: 'spin 0.9s linear infinite' }} /> : <Languages size={13} />}
+          {busy ? 'Gerando…' : (generated.includes(lang) ? 'Regenerar' : 'Gerar versão')}
+        </button>
+      </div>
+      {generated.length > 0 && (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+          {generated.map(code => (
+            <span key={code} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '999px', padding: '3px 4px 3px 10px' }}>
+              {LANG_LABEL[code] || code}
+              <button onClick={() => remove(code)} title="Remover" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '2px' }}>
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
 // ─── Página principal ───────────────────────────────────────────────────────
 
 export default function CopyEditorPage() {
@@ -1197,6 +1277,8 @@ export default function CopyEditorPage() {
   const [hooks, setHooks] = usePersistedState(`${persistKey}:hooks`, [{ id: Date.now(), html: '' }])
   const [body, setBody] = usePersistedState(`${persistKey}:body`, '')
   const [bodyComments, setBodyComments] = usePersistedState(`${persistKey}:bodyComments`, [])
+  // Versões da copy em outros idiomas (adaptação nativa). { en: {hooks, body, at}, ... }
+  const [translations, setTranslations] = usePersistedState(`${persistKey}:translations`, {})
   // Calculadora de tempo do body: minutos alvo → máx de caracteres (e tempo ao vivo
   // enquanto digita). Ritmo fixo ~150 ppm ≈ 900 caracteres/min de locução.
   const [bodyTargetMin, setBodyTargetMin] = usePersistedState(`${persistKey}:bodyTargetMin`, '')
@@ -1461,6 +1543,7 @@ export default function CopyEditorPage() {
           setBody(fd.body || '')
           setBodyInitial(fd.body || '')
           setBodyComments(fd.comments || [])
+          setTranslations(fd.translations || {})
           setEditorVersion(v => v + 1)   // força o RichEditor a remontar com o conteúdo carregado
           // Marca este conteúdo carregado como "salvo" (baseline pra detectar edições)
           savedSnapRef.current = JSON.stringify({
@@ -1488,6 +1571,7 @@ export default function CopyEditorPage() {
     setBody('')
     setBodyInitial('')
     setBodyComments([])
+    setTranslations({})
     setStructureGuide({ hook: '', hook_text: '', body: [] })
     setSelectedRef(null)          // limpa a "Referência ativa" do painel lateral
     setLoadedDraft(null)
@@ -1501,6 +1585,7 @@ export default function CopyEditorPage() {
       `${persistKey}:bodyComments`,
       `${persistKey}:structure`,
       `${persistKey}:structureVisible`,
+      `${persistKey}:translations`,
     )
     newDraftChat()   // chat limpo pro próximo anúncio (não herda conversa do anterior)
     if (editingId) setSearchParams({})
@@ -1627,6 +1712,7 @@ export default function CopyEditorPage() {
         hooks: hooks.map(h => h.html),
         body,
         comments: bodyComments,
+        ...(Object.keys(translations || {}).length ? { translations } : {}),
         ...(existingRating ? { rating: existingRating } : {}),
       }
 
@@ -2095,6 +2181,16 @@ export default function CopyEditorPage() {
             onImproveSelection={writeMode !== 'auto' ? improveSelection : undefined}
           />
         </div>
+
+        {/* Versões em outros idiomas */}
+        <LanguageVersions
+          hooks={hooks}
+          body={body}
+          stripHtml={stripHtml}
+          projectId={activeProject?.id}
+          translations={translations}
+          onSetTranslations={setTranslations}
+        />
 
         {/* Salvar */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>

@@ -1061,6 +1061,29 @@ REGRAS DE CONVERSA:
         raise HTTPException(status_code=500, detail=f"Erro no chat: {exc}")
 
 
+# ─── LOCALIZAR COPY (adaptação nativa para outro idioma) ─────────────────────
+class LocalizeRequest(BaseModel):
+    hooks: list[str] = []
+    body: str = ""
+    lang: str  # 'en' | 'es' | 'fr' | 'de' | 'it'
+    project_id: Optional[str] = None
+
+
+@router.post("/localize")
+async def localize(body: LocalizeRequest, current_user=Depends(get_current_user)):
+    """Gera uma versão da copy adaptada para outro idioma (nativo, não literal)."""
+    from app.services.claude import localize_copy, LOCALIZE_LANGUAGES
+    if body.lang not in LOCALIZE_LANGUAGES:
+        raise HTTPException(status_code=400, detail="Idioma não suportado")
+    result = localize_copy(
+        body.hooks, body.body, body.lang,
+        track_user_id=current_user.id, track_project_id=body.project_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=500, detail="Não foi possível gerar a versão traduzida")
+    return result
+
+
 # ─── ENDPOINT 3: GERAR COPY DO ZERO (modo Automático — Fase 2) ──────────────
 # Placeholder pra Fase 2 — só pra rota não dar 404 se frontend chamar.
 

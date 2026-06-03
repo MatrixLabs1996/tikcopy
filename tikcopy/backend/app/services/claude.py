@@ -1229,6 +1229,79 @@ trecho ele explica"). Vá direto ao conteúdo.
 continue o texto. Se muda de assunto, abra um novo '## '."""
 
 
+# ─── Localização de copy (adaptação nativa, não tradução literal) ─────────────
+# code -> (idioma natural, nacionalidade do falante, "no idioma X", rótulo PT)
+LOCALIZE_LANGUAGES = {
+    "en": ("inglês nativo americano", "dos Estados Unidos", "em inglês", "Inglês (EUA)"),
+    "es": ("espanhol latino-americano nativo", "da América Latina", "em espanhol", "Espanhol (LATAM)"),
+    "fr": ("francês nativo", "da França", "em francês", "Francês (França)"),
+    "de": ("alemão nativo", "da Alemanha", "em alemão", "Alemão (Alemanha)"),
+    "it": ("italiano nativo", "da Itália", "em italiano", "Italiano (Itália)"),
+}
+
+
+def localize_copy(hooks: list, body: str, lang: str,
+                  track_user_id=None, track_project_id=None) -> dict | None:
+    """Adapta a copy (hooks + body) para um idioma de destino com NATURALIDADE NATIVA
+    (não tradução literal). Mantém os mesmos parágrafos e a ordem dos hooks.
+    Retorna {"hooks": [...], "body": "..."} ou None."""
+    lang = (lang or "").lower()
+    if lang not in LOCALIZE_LANGUAGES:
+        return None
+    idioma, nacionalidade, no_idioma, _ = LOCALIZE_LANGUAGES[lang]
+    hooks = [h for h in (hooks or []) if (h or "").strip()]
+    body = (body or "").strip()
+    if not hooks and not body:
+        return None
+
+    system = (
+        f"Você adapta textos de copy de resposta direta para {idioma}, com naturalidade de "
+        f"falante NATIVO {nacionalidade}. NÃO faça tradução literal. Adapte expressões, estrutura "
+        "das frases e escolha de palavras para soar como algo escrito originalmente por um nativo. "
+        "Preserve totalmente o significado, a intenção e o tom. Elimine construções artificiais, "
+        "excesso de formalidade e frases que pareçam traduzidas. Priorize fluidez, naturalidade e "
+        "autenticidade. Reorganize frases se necessário para soar nativo. "
+        "MANTENHA EXATAMENTE a mesma quebra de parágrafos do body e a MESMA ORDEM dos hooks. "
+        "Zero travessões (—). "
+        "Responda APENAS com JSON válido: {\"hooks\": [\"...\", ...], \"body\": \"...\"} "
+        f"(tudo {no_idioma})."
+    )
+    hooks_block = "\n".join(f"[HOOK {i+1}]\n{h}" for i, h in enumerate(hooks)) or "(nenhum)"
+    user = f"HOOKS ({len(hooks)}):\n{hooks_block}\n\n[BODY]\n{body or '(vazio)'}"
+
+    client = anthropic.Anthropic()
+    last = None
+    for attempt in range(3):
+        try:
+            r = client.messages.create(
+                model=SONNET_MODEL, max_tokens=6000,
+                system=system, messages=[{"role": "user", "content": user}],
+            )
+            _track(track_user_id, "traduzir_copy", SONNET_MODEL, r.usage, track_project_id)
+            raw = (r.content[0].text or "").strip()
+            if raw.startswith("```"):
+                raw = re.sub(r"^```(?:json)?", "", raw).strip()
+                raw = re.sub(r"```$", "", raw).strip()
+            s, e = raw.find("{"), raw.rfind("}")
+            data = json.loads(raw[s:e + 1]) if s != -1 and e != -1 else {}
+            out_hooks = data.get("hooks") or []
+            out_body = data.get("body") or ""
+            return {
+                "hooks": [str(h) for h in out_hooks],
+                "body": str(out_body),
+            }
+        except Exception as exc:
+            last = exc
+            msg = str(exc)
+            if any(s in msg for s in ("529", "overloaded", "503", "429", "Connection", "timeout")) and attempt < 2:
+                time.sleep(2 ** (attempt + 1))
+                continue
+            logging.getLogger(__name__).warning(f"[localize_copy] falhou: {exc}")
+            return None
+    logging.getLogger(__name__).warning(f"[localize_copy] falhou: {last}")
+    return None
+
+
 def _chunk_transcript(text: str, max_chars: int = 16000, overlap: int = 600) -> list[str]:
     """Fatia a transcrição em pedaços de ~max_chars, quebrando em fim de frase
     (não corta no meio) e com uma pequena sobreposição pra manter o contexto."""
