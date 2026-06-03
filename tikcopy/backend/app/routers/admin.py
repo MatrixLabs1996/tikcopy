@@ -53,13 +53,28 @@ async def usage_overview(_admin=Depends(require_admin)):
             break
         page += 1
 
-    # Mapeia user_id → email (via profiles, se existir)
+    # Mapeia user_id → email. Fonte principal: auth do Supabase (onde o email vive).
+    distinct_uids = {r["user_id"] for r in rows if r.get("user_id")}
     emails = {}
-    try:
-        profs = sb.table("profiles").select("id, email").execute().data or []
-        emails = {p["id"]: p.get("email") for p in profs}
-    except Exception:
-        pass
+    for uid in distinct_uids:
+        try:
+            resp = sb.auth.admin.get_user_by_id(uid)
+            user = getattr(resp, "user", None) or resp
+            em = getattr(user, "email", None)
+            if em:
+                emails[uid] = em
+        except Exception:
+            pass
+    # Fallback: tabela profiles, se existir, pros que faltaram
+    missing = [u for u in distinct_uids if u not in emails]
+    if missing:
+        try:
+            profs = sb.table("profiles").select("id, email").in_("id", missing).execute().data or []
+            for p in profs:
+                if p.get("email"):
+                    emails[p["id"]] = p["email"]
+        except Exception:
+            pass
 
     by_user = {}
     by_op = {}
