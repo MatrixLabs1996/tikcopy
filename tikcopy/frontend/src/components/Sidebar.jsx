@@ -170,7 +170,6 @@ export default function Sidebar({ collapsed = false, onToggle }) {
         <SectionLabel label="Transcrever" collapsed={collapsed} />
         <NavItem to="/organic" icon={Video} label="Vídeos Orgânicos" collapsed={collapsed} />
         <NavItem to="/lessons" icon={GraduationCap} label="Podcasts & Aulas" collapsed={collapsed} />
-        <NavItem to="/conteudo" icon={Library} label="Conteúdo" collapsed={collapsed} />
         <NavItem to="/ads" icon={Megaphone} label="Anúncios" collapsed={collapsed} />
         <NavItem to="/vsl" icon={TvMinimalPlay} label="VSL" collapsed={collapsed} />
 
@@ -187,6 +186,7 @@ export default function Sidebar({ collapsed = false, onToggle }) {
         <SectionLabel label="Pesquisa" collapsed={collapsed} />
         <NavItem to="/briefings" icon={BookOpen} label="Projeto" collapsed={collapsed} />
         <NavItem to="/researches" icon={Search} label="Pesquisas" collapsed={collapsed} />
+        <NavItem to="/conteudo" icon={Library} label="Conteúdo" collapsed={collapsed} />
 
         <SectionLabel label="Histórico" collapsed={collapsed} />
         <NavItem to="/history" icon={Clock} label="Recentes" collapsed={collapsed} />
