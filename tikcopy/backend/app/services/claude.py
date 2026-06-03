@@ -1286,9 +1286,12 @@ def localize_copy(hooks: list, body: str, lang: str,
             data = json.loads(raw[s:e + 1]) if s != -1 and e != -1 else {}
             out_hooks = data.get("hooks") or []
             out_body = data.get("body") or ""
+            # Rede de segurança anti-travessão (o prompt pede, mas o modelo às vezes escorrega)
+            def _nd(t):
+                return re.sub(r"\s*[—–]\s*", ", ", str(t or ""))
             return {
-                "hooks": [str(h) for h in out_hooks],
-                "body": str(out_body),
+                "hooks": [_nd(h) for h in out_hooks],
+                "body": _nd(out_body),
             }
         except Exception as exc:
             last = exc
