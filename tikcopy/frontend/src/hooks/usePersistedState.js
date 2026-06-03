@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 
+// Sinal global pra suprimir o "flush no unmount" (usado quando o usuário descarta
+// a copy: queremos que o localStorage fique limpo, sem o flush regravar o estado
+// velho durante a desmontagem do componente).
+let _suppressFlush = false
+export function suppressNextFlush() {
+  _suppressFlush = true
+  // Reseta no próximo macrotask — só afeta a desmontagem iminente.
+  setTimeout(() => { _suppressFlush = false }, 0)
+}
+
 /**
  * useState que persiste em localStorage automaticamente.
  *
@@ -50,6 +60,7 @@ export default function usePersistedState(key, initialValue) {
   // sair da página antes do debounce de 300ms disparar (bug: edição se perdia).
   useEffect(() => {
     return () => {
+      if (_suppressFlush) return  // descarte em andamento: não regrava o estado velho
       const { key: k, state: v } = latestRef.current
       writeNow(k, v)
     }

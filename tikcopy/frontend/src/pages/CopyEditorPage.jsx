@@ -4,7 +4,7 @@ import { Plus, Save, X, ChevronRight, ChevronDown, BookOpen, Megaphone, FileText
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import useAppStore from '../stores/useAppStore'
-import usePersistedState, { clearPersistedKeys } from '../hooks/usePersistedState'
+import usePersistedState, { clearPersistedKeys, suppressNextFlush } from '../hooks/usePersistedState'
 import { confirmAction, chooseAction } from '../stores/useConfirmStore'
 import useEditorGuard from '../stores/useEditorGuard'
 import RichEditor from '../components/RichEditor'
@@ -1856,7 +1856,7 @@ export default function CopyEditorPage() {
   const finalizeRef = useRef(null)
   finalizeRef.current = () => handleSave('final')
   const discardRef = useRef(null)
-  discardRef.current = () => resetForm()
+  discardRef.current = () => { resetForm(); suppressNextFlush() }
 
   useEffect(() => {
     const guard = useEditorGuard.getState()
