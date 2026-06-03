@@ -425,13 +425,14 @@ function adsCode(meta) {
   return `ADS ${cleaned}`
 }
 
-export function buildCopyTxt(draft) {
+export function buildCopyTxt(draft, opts = {}) {
+  const { hideMeta = false, heading = null } = opts
   const { meta = {}, hooks = [], body = '', comments = [] } = draft || {}
   const lines = []
   const code = adsCode(meta)
   const title = meta.ads_number ? code : (meta.angle || 'Anúncio')
 
-  lines.push(`── ${title}`)
+  lines.push(`── ${heading != null ? heading : title}`)
   lines.push('='.repeat(60))
   lines.push('')
 
@@ -444,7 +445,7 @@ export function buildCopyTxt(draft) {
     ['Instruções',   meta.editing_notes],
     ['Vídeo Ref.',   meta.video_ref],
   ].filter(([, v]) => v && String(v).trim())
-  if (metaLines.length) {
+  if (!hideMeta && metaLines.length) {
     lines.push('── INFORMAÇÕES')
     lines.push('-'.repeat(40))
     metaLines.forEach(([k, v]) => lines.push(`**${k}:** ${v}`))

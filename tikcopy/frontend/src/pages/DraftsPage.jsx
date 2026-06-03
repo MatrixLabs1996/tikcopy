@@ -197,14 +197,17 @@ function fdMeta(fd) {
 }
 
 // Monta o texto de UMA copy com o original + todas as traduções (pra remessa/download).
+// Original sai completo (com INFORMAÇÕES). Tradução sai só "Traduzido em X" + hooks + body.
 function buildAdAllLangs(fd) {
   const comments = fd.comments || []
-  const sect = (h, b) => buildCopyTxt({ meta: fdMeta(fd), hooks: (h || []).map(x => ({ html: x })), body: b || '', comments })
-  const parts = [sect(fd.hooks || [], fd.body || '')]
+  const parts = [buildCopyTxt({ meta: fdMeta(fd), hooks: (fd.hooks || []).map(x => ({ html: x })), body: fd.body || '', comments })]
   const tr = fd.translations || {}
   for (const [c, t] of Object.entries(tr)) {
-    parts.push(`\n\n----- ${LANG_LABEL_VIEW[c] || c} -----\n`)
-    parts.push(sect(t.hooks || [], t.body || ''))
+    parts.push('\n')
+    parts.push(buildCopyTxt(
+      { meta: fdMeta(fd), hooks: (t.hooks || []).map(x => ({ html: x })), body: t.body || '', comments: [] },
+      { hideMeta: true, heading: `Traduzido em ${LANG_LABEL_VIEW[c] || c}` },
+    ))
   }
   return parts.join('\n')
 }
@@ -322,13 +325,15 @@ function ViewAdModal({ draft, onClose, onEdit, onUseAsReference }) {
     }
   }
 
-  // Download: original + todas as traduções juntos (pra entregar tudo ao editor)
+  // Download: original (completo) + traduções (só "Traduzido em X" + hooks + body)
   const buildCombined = () => {
-    const sect = (h, b, c) => buildCopyTxt({ meta: fdMeta(fd), hooks: (h || []).map(x => ({ html: x })), body: b || '', comments: c })
-    const parts = [sect((fd.hooks || []), fd.body || '', comments)]
+    const parts = [buildCopyTxt({ meta: fdMeta(fd), hooks: (fd.hooks || []).map(x => ({ html: x })), body: fd.body || '', comments })]
     for (const [c, t] of Object.entries(translations)) {
-      parts.push(`\n\n======================================\n${LANG_LABEL_VIEW[c] || c}\n======================================\n`)
-      parts.push(sect(t.hooks || [], t.body || '', comments))
+      parts.push('\n')
+      parts.push(buildCopyTxt(
+        { meta: fdMeta(fd), hooks: (t.hooks || []).map(x => ({ html: x })), body: t.body || '', comments: [] },
+        { hideMeta: true, heading: `Traduzido em ${LANG_LABEL_VIEW[c] || c}` },
+      ))
     }
     return parts.join('\n')
   }
