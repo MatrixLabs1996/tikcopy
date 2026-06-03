@@ -3,7 +3,7 @@ import {
   Video, GraduationCap, Megaphone, MessageSquare,
   PenLine, FileText, BookOpen, Search, Clock,
   Settings, LogOut, FolderOpen, ChevronRight, Layers, TvMinimalPlay, Radar, Sparkles,
-  PanelLeftClose, PanelLeft,
+  PanelLeftClose, PanelLeft, Library,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { BarChart3 } from 'lucide-react'
@@ -170,6 +170,7 @@ export default function Sidebar({ collapsed = false, onToggle }) {
         <SectionLabel label="Transcrever" collapsed={collapsed} />
         <NavItem to="/organic" icon={Video} label="Vídeos Orgânicos" collapsed={collapsed} />
         <NavItem to="/lessons" icon={GraduationCap} label="Podcasts & Aulas" collapsed={collapsed} />
+        <NavItem to="/conteudo" icon={Library} label="Conteúdo" collapsed={collapsed} />
         <NavItem to="/ads" icon={Megaphone} label="Anúncios" collapsed={collapsed} />
         <NavItem to="/vsl" icon={TvMinimalPlay} label="VSL" collapsed={collapsed} />
 

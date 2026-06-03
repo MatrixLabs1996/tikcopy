@@ -277,6 +277,22 @@ async def get_history(current_user=Depends(get_current_user)):
     return res.data or []
 
 
+@router.get("/lessons/list")
+async def list_lessons(current_user=Depends(get_current_user)):
+    """Biblioteca de Conteúdo: todos os guias de aula/podcast do usuário (nível conta)."""
+    sb = get_supabase()
+    res = (
+        sb.table("transcriptions")
+        .select("id, title, niche, project_id, created_at")
+        .eq("user_id", current_user.id)
+        .eq("type", "lesson")
+        .order("created_at", desc=True)
+        .limit(300)
+        .execute()
+    )
+    return res.data or []
+
+
 @router.get("/{transcription_id}")
 async def get_transcription(transcription_id: str, current_user=Depends(get_current_user)):
     sb = get_supabase()

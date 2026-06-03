@@ -30,12 +30,14 @@ import ProfileAnalysisPage from './pages/ProfileAnalysisPage'
 import BrainstormPage from './pages/BrainstormPage'
 import AdminPage from './pages/AdminPage'
 import BriefingViewerPage from './pages/BriefingViewerPage'
+import ContentPage from './pages/ContentPage'
 
 // Título da aba do navegador por rota → "Página | CopyX"
 const PAGE_TITLES = {
   '/': 'Início',
   '/organic': 'Vídeos Orgânicos',
   '/lessons': 'Podcasts & Aulas',
+  '/conteudo': 'Conteúdo',
   '/ads': 'Anúncios',
   '/vsl': 'VSL',
   '/copy-zone': 'Inteligência',
@@ -142,6 +144,7 @@ export default function App() {
           {/* Raio-X e Brainstorm desativados ("em breve") — bloqueia acesso por URL */}
           <Route path="/raio-x" element={<Navigate to="/" replace />} />
           <Route path="/brainstorm" element={<Navigate to="/" replace />} />
+          <Route path="/conteudo" element={<ContentPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/vsl" element={<VSLPage />} />
         </Route>
