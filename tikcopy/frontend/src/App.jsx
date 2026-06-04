@@ -141,9 +141,9 @@ export default function App() {
           <Route path="/projects/new" element={<ProjectCreatePage />} />
           <Route path="/criar-copy" element={<RequireRealProject pageName="Escrever"><CopyEditorPage /></RequireRealProject>} />
           <Route path="/swipe" element={<SwipePage />} />
-          {/* Raio-X e Brainstorm desativados ("em breve") — bloqueia acesso por URL */}
+          {/* Raio-X desativado ("em breve") — bloqueia acesso por URL */}
           <Route path="/raio-x" element={<Navigate to="/" replace />} />
-          <Route path="/brainstorm" element={<Navigate to="/" replace />} />
+          <Route path="/brainstorm" element={<BrainstormPage />} />
           <Route path="/conteudo" element={<ContentPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/vsl" element={<VSLPage />} />

@@ -181,7 +181,7 @@ export default function Sidebar({ collapsed = false, onToggle }) {
 
         <SectionLabel label="Análise" collapsed={collapsed} />
         <SoonItem icon={Radar} label="Raio-X de Perfil" collapsed={collapsed} />
-        <SoonItem icon={Sparkles} label="Brainstorm ADS" collapsed={collapsed} />
+        <NavItem to="/brainstorm" icon={Sparkles} label="Brainstorm ADS" collapsed={collapsed} />
 
         <SectionLabel label="Pesquisa" collapsed={collapsed} />
         <NavItem to="/briefings" icon={BookOpen} label="Projeto" collapsed={collapsed} />
