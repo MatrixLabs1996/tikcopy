@@ -321,22 +321,42 @@ export default function ProjectsPage() {
           </button>
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '12px',
-        }}>
-          {projects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              isActive={activeProject?.id === project.id}
-              onActivate={setActiveProject}
-              onEdit={(p) => { setShowForm(false); setEditingProject(p) }}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+        (() => {
+          // Agrupa as ofertas por nicho (usa o campo nicho; vazio vira "Geral")
+          const groups = {}
+          for (const p of projects) {
+            const key = (p.nicho || '').trim() || 'Geral'
+            ;(groups[key] = groups[key] || []).push(p)
+          }
+          const names = Object.keys(groups).sort((a, b) => a === 'Geral' ? 1 : b === 'Geral' ? -1 : a.localeCompare(b))
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              {names.map((niche) => (
+                <div key={niche}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <FolderOpen size={14} style={{ color: 'var(--accent)' }} />
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{niche}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '999px', padding: '1px 8px' }}>
+                      {groups[niche].length} {groups[niche].length === 1 ? 'oferta' : 'ofertas'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                    {groups[niche].map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        isActive={activeProject?.id === project.id}
+                        onActivate={setActiveProject}
+                        onEdit={(p) => { setShowForm(false); setEditingProject(p) }}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        })()
       )}
     </div>
   )
