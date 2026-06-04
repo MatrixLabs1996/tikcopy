@@ -192,12 +192,37 @@ def _no_dashes(text: str) -> str:
     return re.sub(r"\s*[—–]\s*", ", ", text)
 
 
+def _get_niche_dossier(user_id: str, project_id: Optional[str]) -> tuple:
+    """Lê o dossiê do NICHO ao qual a oferta (projeto) pertence. Compartilhado por
+    todas as ofertas do nicho. Retorna (nome_do_nicho, dossie_md) ou ('', '')."""
+    if not project_id:
+        return "", ""
+    try:
+        sb = get_supabase()
+        proj = (
+            sb.table("projects").select("niche_id")
+            .eq("id", project_id).eq("user_id", user_id).single().execute()
+        ).data or {}
+        nid = proj.get("niche_id")
+        if not nid:
+            return "", ""
+        n = (
+            sb.table("niches").select("name, dossier")
+            .eq("id", nid).eq("user_id", user_id).single().execute()
+        ).data or {}
+        return (n.get("name") or "", (n.get("dossier") or "").strip())
+    except Exception:
+        return "", ""
+
+
 def _get_offer(user_id: str, project_id: Optional[str]) -> dict:
-    """Carrega a OFERTA do projeto (cada projeto É uma oferta, 1:1) e lê o
-    dossiê em markdown do R2. Retorna {title, market, product_type, funnel_type,
-    content} ou {} se o projeto ainda não tem oferta criada."""
+    """Carrega a OFERTA do projeto e lê o dossiê em markdown do R2, e ainda anexa o
+    DOSSIÊ DO NICHO (compartilhado). Retorna {title, market, ..., content,
+    niche_name, niche_dossier} ou {} se não houver nada."""
     if not project_id:
         return {}
+    niche_name, niche_dossier = _get_niche_dossier(user_id, project_id)
+    base = {"niche_name": niche_name, "niche_dossier": niche_dossier} if niche_dossier else {}
     try:
         import json as _json
         from app.services import r2_storage
@@ -215,7 +240,7 @@ def _get_offer(user_id: str, project_id: Optional[str]) -> dict:
                 .execute()
             )
         except Exception:
-            return {}
+            return base
 
         rec = None
         for row in res.data or []:
@@ -234,7 +259,7 @@ def _get_offer(user_id: str, project_id: Optional[str]) -> dict:
                 except Exception:
                     pass
         if not rec:
-            return {}
+            return base
 
         # file_meta do dossiê (template_data ou prefixo __FILE_META__)
         meta = None
@@ -266,29 +291,47 @@ def _get_offer(user_id: str, project_id: Optional[str]) -> dict:
             "product_type": meta.get("product_type") or "",
             "funnel_type": meta.get("funnel_type") or "",
             "content": content[:14000],  # cap pra não estourar o prompt
+            "niche_name": niche_name,
+            "niche_dossier": niche_dossier,
         }
     except Exception:
-        return {}
+        return base
 
 
 def _build_offer_block(offer: dict) -> str:
-    """Formata a oferta como bloco de destaque pra IA — vai NO TOPO do contexto."""
+    """Formata o contexto upstream pra IA: DOSSIÊ DO NICHO (público compartilhado) +
+    OFERTA (produto/VSL específico). Vai NO TOPO do contexto."""
     if not offer:
         return ""
-    lines = ["═══════════════════════════════════════",
-             "🎯 OFERTA QUE VOCÊ VAI ESCREVER (LEIA PRIMEIRO — toda a copy é sobre ESTE produto/oferta/funil):"]
-    if offer.get("title"):
-        lines.append(f"Oferta: {offer['title']}")
-    if offer.get("market"):
-        lines.append(f"Nicho/Mercado: {offer['market']}")
-    if offer.get("product_type"):
-        lines.append(f"Tipo de produto: {offer['product_type']}")
-    if offer.get("funnel_type"):
-        lines.append(f"Tipo de funil: {offer['funnel_type']}")
-    if offer.get("content"):
-        lines.append("\nDOSSIÊ COMPLETO DA OFERTA (use os pontos-chave, voz do cliente, provas e mecanismos aqui dentro):\n" + offer["content"])
-    lines.append("═══════════════════════════════════════")
-    return "\n".join(lines)
+    parts = []
+    # 1) Dossiê do nicho (compartilhado por todas as ofertas do nicho)
+    if offer.get("niche_dossier"):
+        nm = offer.get("niche_name") or "nicho"
+        parts.append(
+            "═══════════════════════════════════════\n"
+            f"📚 DOSSIÊ DO NICHO ({nm}) — o PÚBLICO (avatar, dores, desejos, voz, nível de "
+            "consciência) é COMPARTILHADO por todas as ofertas deste nicho. Escreva PARA este público:\n"
+            + offer["niche_dossier"] +
+            "\n═══════════════════════════════════════"
+        )
+    # 2) Oferta específica (só se houver dossiê/identificação da oferta)
+    has_offer = any(offer.get(k) for k in ("title", "market", "product_type", "funnel_type", "content"))
+    if has_offer:
+        lines = ["═══════════════════════════════════════",
+                 "🎯 OFERTA QUE VOCÊ VAI ESCREVER (LEIA PRIMEIRO — toda a copy é sobre ESTE produto/oferta/funil):"]
+        if offer.get("title"):
+            lines.append(f"Oferta: {offer['title']}")
+        if offer.get("market"):
+            lines.append(f"Nicho/Mercado: {offer['market']}")
+        if offer.get("product_type"):
+            lines.append(f"Tipo de produto: {offer['product_type']}")
+        if offer.get("funnel_type"):
+            lines.append(f"Tipo de funil: {offer['funnel_type']}")
+        if offer.get("content"):
+            lines.append("\nDOSSIÊ DA OFERTA (mecanismo, promessa, provas e CTA específicos desta oferta):\n" + offer["content"])
+        lines.append("═══════════════════════════════════════")
+        parts.append("\n".join(lines))
+    return "\n\n".join(parts)
 
 
 def _get_project_info(project_id: Optional[str]) -> dict:

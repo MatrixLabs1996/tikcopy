@@ -1229,6 +1229,60 @@ trecho ele explica"). Vá direto ao conteúdo.
 continue o texto. Se muda de assunto, abra um novo '## '."""
 
 
+# ─── Dossiê do NICHO (pesquisa compartilhada por todas as ofertas do nicho) ───
+NICHE_DOSSIER_SYSTEM = """Você é um estrategista de pesquisa de mercado para copy de resposta direta. \
+A partir do material de pesquisa de um NICHO (não de uma oferta específica), destile um DOSSIÊ DO NICHO \
+em markdown, com a inteligência que serve a QUALQUER oferta dentro dele.
+
+Cubra (só o que o material sustentar, não invente):
+## Avatar
+Quem é, contexto de vida, momento.
+## Dores e medos dominantes
+As feridas mais agudas, com a linguagem que eles usam.
+## Desejos e sonhos
+O que querem de verdade, o estado desejado.
+## Voz do público
+Frases, expressões e gírias REAIS do público (do material). Cite literalmente quando houver.
+## Nível de consciência e sofisticação do mercado
+Em que estágio o mercado está, o que já foi prometido demais, o que ainda surpreende.
+## Crenças e objeções
+O que eles acreditam, o que trava a compra.
+## Ângulos que funcionam no nicho
+Padrões de abordagem que ressoam.
+
+REGRAS: fiel ao material, sem inventar. Zero travessões (—). Markdown limpo, direto, sem enrolação."""
+
+
+def distill_niche_dossier(research_text: str, niche_name: str = "",
+                          track_user_id=None, track_project_id=None) -> str:
+    """Destila o material de pesquisa de um nicho num DOSSIÊ DO NICHO (markdown)."""
+    research_text = (research_text or "").strip()
+    if not research_text:
+        return ""
+    client = anthropic.Anthropic()
+    user = (f"NICHO: {niche_name}\n\n" if niche_name else "") + \
+        "MATERIAL DE PESQUISA DO NICHO:\n\n" + research_text[:60000]
+    last = None
+    for attempt in range(3):
+        try:
+            r = client.messages.create(
+                model=SONNET_MODEL, max_tokens=6000,
+                system=NICHE_DOSSIER_SYSTEM,
+                messages=[{"role": "user", "content": user}],
+            )
+            _track(track_user_id, "dossie_nicho", SONNET_MODEL, r.usage, track_project_id)
+            return re.sub(r"\s*[—–]\s*", ", ", (r.content[0].text or "").strip())
+        except Exception as e:
+            last = e
+            if any(s in str(e) for s in ("529", "overloaded", "503", "429", "Connection", "timeout")) and attempt < 2:
+                time.sleep(2 ** (attempt + 1))
+                continue
+            logging.getLogger(__name__).warning(f"[distill_niche_dossier] falhou: {e}")
+            return ""
+    logging.getLogger(__name__).warning(f"[distill_niche_dossier] falhou: {last}")
+    return ""
+
+
 # ─── Localização de copy (adaptação nativa, não tradução literal) ─────────────
 # code -> (idioma natural, nacionalidade do falante, "no idioma X", rótulo PT)
 LOCALIZE_LANGUAGES = {

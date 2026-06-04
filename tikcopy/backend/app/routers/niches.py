@@ -119,6 +119,52 @@ async def update_niche(niche_id: str, body: NicheUpdate, current_user=Depends(ge
     return res.data[0] if res.data else {}
 
 
+class NicheDossierBuild(BaseModel):
+    research_text: str          # material de pesquisa do nicho (texto agregado)
+
+
+@router.post("/{niche_id}/build-dossier")
+async def build_niche_dossier(niche_id: str, body: NicheDossierBuild, current_user=Depends(get_current_user)):
+    """Destila o material de pesquisa do nicho num dossiê (markdown) e salva."""
+    from datetime import datetime, timezone
+    from app.services import claude
+    sb = get_supabase()
+    # Garante que o nicho é do usuário
+    n = (
+        sb.table("niches").select("id, name")
+        .eq("id", niche_id).eq("user_id", current_user.id).limit(1).execute()
+    ).data
+    if not n:
+        raise HTTPException(status_code=404, detail="Nicho não encontrado.")
+    text = (body.research_text or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Cole o material de pesquisa do nicho.")
+    dossier = claude.distill_niche_dossier(text, niche_name=n[0].get("name") or "", track_user_id=current_user.id)
+    if not dossier:
+        raise HTTPException(status_code=500, detail="Não foi possível gerar o dossiê do nicho.")
+    sb.table("niches").update({
+        "dossier": dossier,
+        "dossier_built_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", niche_id).eq("user_id", current_user.id).execute()
+    return {"dossier": dossier}
+
+
+class NicheDossierSet(BaseModel):
+    dossier: str
+
+
+@router.patch("/{niche_id}/dossier")
+async def set_niche_dossier(niche_id: str, body: NicheDossierSet, current_user=Depends(get_current_user)):
+    """Salva/edita manualmente o dossiê do nicho (texto markdown)."""
+    from datetime import datetime, timezone
+    sb = get_supabase()
+    sb.table("niches").update({
+        "dossier": body.dossier or "",
+        "dossier_built_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", niche_id).eq("user_id", current_user.id).execute()
+    return {"ok": True}
+
+
 @router.delete("/{niche_id}")
 async def delete_niche(niche_id: str, current_user=Depends(get_current_user)):
     """Exclui o nicho. As ofertas dentro dele ficam sem niche_id (não são apagadas)."""
