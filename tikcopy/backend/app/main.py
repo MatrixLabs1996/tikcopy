@@ -8,7 +8,7 @@ load_dotenv(Path(__file__).parent.parent / ".env", override=True)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, transcription, ads, vsl, projects, copy_zone, templates, drafts, briefings, research_docs, publicos, swipes, intelligence, videos, ai, offers, profile_analysis, admin, brainstorm
+from app.routers import auth, transcription, ads, vsl, projects, copy_zone, templates, drafts, briefings, research_docs, publicos, swipes, intelligence, videos, ai, offers, profile_analysis, admin, brainstorm, niches
 
 app = FastAPI(title="TikCopy API", version="2.0.0")
 
@@ -33,6 +33,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(projects.router, prefix="/projects", tags=["projects"])
+app.include_router(niches.router, prefix="/niches", tags=["niches"])
 app.include_router(transcription.router, prefix="/transcribe", tags=["transcription"])
 app.include_router(ads.router, prefix="/ads", tags=["ads"])
 app.include_router(vsl.router, prefix="/vsl", tags=["vsl"])

@@ -24,6 +24,7 @@ class ProfileUpdate(BaseModel):
 class ProjectCreate(BaseModel):
     name: str
     nicho: Optional[str] = None
+    niche_id: Optional[str] = None   # nicho ao qual esta oferta pertence
     avatar: Optional[str] = None
     tone: Optional[str] = None
     platform: Optional[str] = None
@@ -33,6 +34,7 @@ class ProjectCreate(BaseModel):
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     nicho: Optional[str] = None
+    niche_id: Optional[str] = None
     avatar: Optional[str] = None
     tone: Optional[str] = None
     platform: Optional[str] = None
