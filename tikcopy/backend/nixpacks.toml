@@ -1,0 +1,11 @@
+# Config do Railway (Nixpacks) pro backend FastAPI.
+# Instala ffmpeg no sistema (yt-dlp precisa) além do Python.
+
+[phases.setup]
+nixPkgs = ["python311", "ffmpeg"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[start]
+cmd = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
